@@ -282,3 +282,173 @@ print("--HELD--")
 print("\\n".join(sorted(holds)))' <<<"$sim"
 }
 
+# --- Mejoras: Indicadores, proximidad, recomendaciones ---
+
+sys_pct_proximity_to_limit() {
+  # args: current_pct limit_pct
+  # Retorna: % de proximidad al límite (ej: 80% de 85% = 94% proximidad)
+  local current="$1" limit="$2"
+  if [[ "$current" -ge "$limit" ]]; then
+    echo "100"
+  else
+    awk -v c="$current" -v l="$limit" 'BEGIN{printf "%d", (c/l)*100}'
+  fi
+}
+
+sys_top_processes() {
+  # args: metric (cpu|mem) count
+  # Retorna: "name pid%%\nname pid%%\n..."
+  local metric="$1" count="${2:-5}"
+  if [[ "$metric" == "cpu" ]]; then
+    ps aux --sort=-%cpu | awk -v n="$count" 'NR>1 && NR<=n+1 {printf "%s %s %.1f\n", $11, $2, $3}'
+  elif [[ "$metric" == "mem" ]]; then
+    ps aux --sort=-%mem | awk -v n="$count" 'NR>1 && NR<=n+1 {printf "%s %s %.1f\n", $11, $2, $4}'
+  fi
+}
+
+sys_smartctl_status() {
+  # Retorna: estado del disco (PASS|FAIL|UNKNOWN)
+  local status="UNKNOWN"
+  if command -v smartctl >/dev/null 2>&1; then
+    # Intenta /dev/sda primero (disco raíz típico)
+    local dev result
+    for dev in /dev/sda /dev/nvme0n1 /dev/sdb; do
+      if [[ ! -e "$dev" ]]; then continue; fi
+      # Intenta sin sudo primero
+      result="$(smartctl -H "$dev" 2>/dev/null || smartctl -H "$dev" -d auto 2>/dev/null || true)"
+      if echo "$result" | grep -qi "overall.*health.*passed"; then
+        status="PASS"
+        break
+      elif echo "$result" | grep -qi "overall.*health.*failed"; then
+        status="FAIL"
+        break
+      fi
+    done
+  fi
+  echo "$status"
+}
+
+sys_network_info() {
+  # Retorna: ifaces activas, gateway, DNS (formato: line\nline\n...)
+  local out=""
+  
+  # Interfaces activas
+  out="<b>Interfaces</b>"$'\n'
+  if command -v ip >/dev/null 2>&1; then
+    ip -br addr show 2>/dev/null | awk '$2=="UP"||$2=="UP,LOOPBACK" {printf "• %s: %s\n", $1, $3}' | while read -r line; do
+      out+="$line"$'\n'
+    done || true
+  fi
+  
+  # Gateway
+  local gw
+  if command -v ip >/dev/null 2>&1; then
+    gw="$(ip route 2>/dev/null | awk '$1=="default" {print $3; exit}')" || true
+    if [[ -n "$gw" ]]; then
+      out+="<b>Gateway</b>"$'\n'"• ${gw}"$'\n'
+    fi
+  fi
+  
+  # DNS
+  local dns_list
+  dns_list="$(grep -h nameserver /etc/resolv.conf 2>/dev/null | awk '{print $2}' | head -2 | tr '\n' ' ')" || true
+  if [[ -n "$dns_list" ]]; then
+    out+="<b>DNS</b>"$'\n'"• ${dns_list}"
+  fi
+  
+  echo -e "$out"
+}
+
+sys_service_changes() {
+  # Retorna: cambios desde el último reporte (start|stop)
+  # Guarda estado en /var/lib/boot-report/last_services
+  local statefile="/var/lib/boot-report/last_services"
+  local current_list
+  
+  if ! command -v systemctl >/dev/null 2>&1; then
+    return 0
+  fi
+  
+  current_list="$(systemctl list-units --type=service --no-legend --all 2>/dev/null | awk '{print $1":"$3}' | sort || true)"
+  
+  mkdir -p "$(dirname "$statefile")" 2>/dev/null || true
+  
+  if [[ ! -f "$statefile" ]]; then
+    echo "$current_list" > "$statefile" 2>/dev/null || true
+    return 0
+  fi
+  
+  local prev_list
+  prev_list="$(cat "$statefile" 2>/dev/null || true)"
+  
+  # Detectar cambios simples comparando líneas
+  local changes=""
+  while read -r line; do
+    [[ -z "$line" ]] && continue
+    if ! echo "$prev_list" | grep -q "^$line$"; then
+      local svc="${line%:*}"
+      changes+="STARTED: $(basename "$svc")"$'\n'
+    fi
+  done <<<"$current_list"
+  
+  while read -r line; do
+    [[ -z "$line" ]] && continue
+    if ! echo "$current_list" | grep -q "^$line$"; then
+      local svc="${line%:*}"
+      changes+="STOPPED: $(basename "$svc")"$'\n'
+    fi
+  done <<<"$prev_list"
+  
+  echo -e "$changes"
+  echo "$current_list" > "$statefile" 2>/dev/null || true
+}
+
+sys_critical_alerts() {
+  # args: load_sev ram_sev disk_sev temp_sev failed_count upd_sec_n
+  # Retorna: lista de alertas críticas (vacío si todo OK)
+  local load_sev="$1" ram_sev="$2" disk_sev="$3" temp_sev="$4" failed_count="$5" upd_sec_n="$6"
+  local alerts=""
+  
+  [[ "$load_sev" == "CRIT" ]] && alerts+="• Load crítica"$'\n'
+  [[ "$ram_sev" == "CRIT" ]] && alerts+="• RAM crítica"$'\n'
+  [[ "$disk_sev" == "CRIT" ]] && alerts+="• Disco crítico"$'\n'
+  [[ "$temp_sev" == "CRIT" ]] && alerts+="• Temperatura crítica"$'\n'
+  [[ "$failed_count" -gt 0 ]] && alerts+="• $failed_count servicios fallidos"$'\n'
+  [[ "$upd_sec_n" -gt 0 ]] && alerts+="• $upd_sec_n actualizaciones de SEGURIDAD"$'\n'
+  
+  echo -e "$alerts"
+}
+
+sys_metric_trend() {
+  # args: current_value metric_name (load|ram|disk)
+  # Retorna: "direction percentage" (ej: "↗ +5" o "↘ -2" o "→ 0")
+  local current="$1" metric="$2"
+  local statefile="/var/lib/boot-report/last_${metric}"
+  
+  mkdir -p "$(dirname "$statefile")" 2>/dev/null || true
+  
+  if [[ ! -f "$statefile" ]]; then
+    echo "$current" > "$statefile" 2>/dev/null || true
+    echo "→ 0"
+    return 0
+  fi
+  
+  local prev
+  prev="$(cat "$statefile" 2>/dev/null || echo "$current")"
+  
+  local diff
+  diff=$((current - prev))
+  
+  local direction
+  if [[ "$diff" -gt 0 ]]; then
+    direction="↗"
+  elif [[ "$diff" -lt 0 ]]; then
+    direction="↘"
+  else
+    direction="→"
+  fi
+  
+  echo "$current" > "$statefile" 2>/dev/null || true
+  echo "$direction $(printf '%+d' "$diff")"
+}
+
