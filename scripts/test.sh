@@ -129,11 +129,12 @@ if [[ "${DIRECT}" -eq 1 ]]; then
   echo "== Ejecutando directo (sin systemd) =="
   install -d -m 0750 -o bootreport -g bootreport /run/boot-report /var/lib/boot-report 2>/dev/null || true
   export XDG_RUNTIME_DIR=/run/boot-report
+  echo "-- Salida del script (incluye message_id y URLs) --"
   if command -v runuser >/dev/null 2>&1; then
-    runuser -u bootreport -- "${APP_DIR}/boot-report.sh"
+    runuser -u bootreport -- "${APP_DIR}/boot-report.sh" | tee /dev/stdout
   else
     need_cmd sudo
-    sudo -u bootreport "${APP_DIR}/boot-report.sh"
+    sudo -u bootreport "${APP_DIR}/boot-report.sh" | tee /dev/stdout
   fi
   echo "OK: ejecución directa finalizada."
   exit 0
