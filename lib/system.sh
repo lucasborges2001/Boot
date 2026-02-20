@@ -134,7 +134,7 @@ _cpu_section_html() {
     END{
       if (cpu_max<=0) exit
       print "<b>CPU</b>"
-      print sprintf("• CPU Package (máx): <b>%d°C</b>", int(cpu_max+0.5))
+      print sprintf("• CPU (máx): <b>%d°C</b>", int(cpu_max+0.5))
       for (i=0;i<32;i++) {
         if (i in cpu) {
           line=sprintf("  - Socket %d (Package): <b>%d°C</b>", i, int(cpu[i]+0.5))
@@ -155,7 +155,6 @@ _acpi_section_html() {
       t=clean($2)
       print "<b>Sistema</b>"
       print sprintf("• ACPI (zona): <b>%s°C</b> <i>(%s)</i>", t, chip)
-      print "  - Nota: ACPI suele NO representar temperatura de CPU."
       exit
     }
   '
@@ -301,9 +300,9 @@ sys_top_processes() {
   # Retorna: "name pid%%\nname pid%%\n..."
   local metric="$1" count="${2:-5}"
   if [[ "$metric" == "cpu" ]]; then
-    ps aux --sort=-%cpu | awk -v n="$count" 'NR>1 && NR<=n+1 {printf "%s %s %.1f\n", $11, $2, $3}'
+    ps aux --sort=-%cpu | awk -v n="$count" 'NR>1 && NR<=n+1 {cmd=$11; sub(".*/","",cmd); printf "%s %s %.1f\n", cmd, $2, $3}'
   elif [[ "$metric" == "mem" ]]; then
-    ps aux --sort=-%mem | awk -v n="$count" 'NR>1 && NR<=n+1 {printf "%s %s %.1f\n", $11, $2, $4}'
+    ps aux --sort=-%mem | awk -v n="$count" 'NR>1 && NR<=n+1 {cmd=$11; sub(".*/","",cmd); printf "%s %s %.1f\n", cmd, $2, $4}'
   fi
 }
 
@@ -334,7 +333,7 @@ sys_network_info() {
   local out=""
   
   # Interfaces activas
-  out="<b>Interfaces</b>"$'\n'
+  out="Interfaces"$'\n'
   if command -v ip >/dev/null 2>&1; then
     ip -br addr show 2>/dev/null | awk '$2=="UP"||$2=="UP,LOOPBACK" {printf "• %s: %s\n", $1, $3}' | while read -r line; do
       out+="$line"$'\n'
@@ -346,7 +345,7 @@ sys_network_info() {
   if command -v ip >/dev/null 2>&1; then
     gw="$(ip route 2>/dev/null | awk '$1=="default" {print $3; exit}')" || true
     if [[ -n "$gw" ]]; then
-      out+="<b>Gateway</b>"$'\n'"• ${gw}"$'\n'
+      out+=$'\n'"Gateway"$'\n'"• ${gw}"$'\n'
     fi
   fi
   
@@ -354,7 +353,7 @@ sys_network_info() {
   local dns_list
   dns_list="$(grep -h nameserver /etc/resolv.conf 2>/dev/null | awk '{print $2}' | head -2 | tr '\n' ' ')" || true
   if [[ -n "$dns_list" ]]; then
-    out+="<b>DNS</b>"$'\n'"• ${dns_list}"
+    out+=$'\n'"DNS"$'\n'"• ${dns_list}"
   fi
   
   echo -e "$out"
@@ -388,7 +387,7 @@ sys_service_changes() {
     [[ -z "$line" ]] && continue
     if ! echo "$prev_list" | grep -q "^$line$"; then
       local svc="${line%:*}"
-      changes+="STARTED: $(basename "$svc")"$'\n'
+      changes+="INICIADO: $(basename "$svc")"$'\n'
     fi
   done <<<"$current_list"
   
@@ -396,7 +395,7 @@ sys_service_changes() {
     [[ -z "$line" ]] && continue
     if ! echo "$current_list" | grep -q "^$line$"; then
       local svc="${line%:*}"
-      changes+="STOPPED: $(basename "$svc")"$'\n'
+      changes+="DETENIDO: $(basename "$svc")"$'\n'
     fi
   done <<<"$prev_list"
   
@@ -452,4 +451,3 @@ sys_metric_trend() {
   echo "$current" > "$statefile" 2>/dev/null || true
   echo "$direction $(printf '%+d' "$diff")"
 }
-

@@ -125,13 +125,6 @@ UPD_SEC_N=$(grep -c . <<<"$UPD_SEC_LIST" 2>/dev/null || true)
 UPD_REG_N=$(grep -c . <<<"$UPD_REG_LIST" 2>/dev/null || true)
 UPDATES_COUNT=$((UPD_SEC_N + UPD_REG_N))
 
-# --- Recolección de NEW DATA (mejoras) ---
-TOP_CPU="$(sys_top_processes cpu 5 2>/dev/null || true)"
-TOP_RAM="$(sys_top_processes mem 5 2>/dev/null || true)"
-SMART_STATUS="$(sys_smartctl_status 2>/dev/null || echo UNKNOWN)"
-NETWORK_INFO="$(sys_network_info 2>/dev/null || true)"
-SERVICE_CHANGES="$(sys_service_changes 2>/dev/null || true)"
-
 # --- Tendencias ---
 LOAD_TREND="$(sys_metric_trend "$LOAD_PCT" "load" 2>/dev/null || echo "→ 0")"
 RAM_TREND="$(sys_metric_trend "$RAM_PCT" "ram" 2>/dev/null || echo "→ 0")"
@@ -147,8 +140,68 @@ if [[ -n "${TEMP_CPU_MAX_C}" ]]; then
   TEMP_SEV="$(_sev "$TEMP_CPU_MAX_C" "$WARN_TEMP_C" "$CRIT_TEMP_C")"
 fi
 
-# --- Alertas críticas ---
-CRITICAL_ALERTS="$(sys_critical_alerts "$LOAD_SEV" "$RAM_SEV" "$DISK_SEV" "$TEMP_SEV" "$FAILED_COUNT" "$UPD_SEC_N" || true)"
+# --- Recolección (condicional / bajo impacto) ---
+SERVICE_CHANGES="$(sys_service_changes 2>/dev/null || true)"
+
+NEED_NETWORK="false"
+[[ -z "$IP_WAN" ]] && NEED_NETWORK="true"
+
+NEED_TOP="false"
+[[ "$LOAD_SEV" != "OK" || "$RAM_SEV" != "OK" ]] && NEED_TOP="true"
+
+# SMART: por defecto semanal (evita cargar el server innecesariamente)
+BOOT_SMART_CHECK="${BOOT_SMART_CHECK:-weekly}" # off|daily|weekly|onwarn
+SMART_STATUS="UNKNOWN"
+SMART_SHOULD_RUN="false"
+if command -v smartctl >/dev/null 2>&1 && [[ "$BOOT_SMART_CHECK" != "off" ]]; then
+  case "$BOOT_SMART_CHECK" in
+    daily) SMART_SHOULD_RUN="true" ;;
+    onwarn) [[ "$DISK_SEV" != "OK" ]] && SMART_SHOULD_RUN="true" ;;
+    weekly|*)
+      smart_stamp="${STATEDIR}/last_smart_date"
+      if [[ ! -f "$smart_stamp" ]]; then
+        SMART_SHOULD_RUN="true"
+      else
+        last="$(cat "$smart_stamp" 2>/dev/null || true)"
+        now_s="$(date +%s)"
+        last_s="$(date -d "$last" +%s 2>/dev/null || echo 0)"
+        # 7 días
+        (( now_s - last_s >= 7*24*3600 )) && SMART_SHOULD_RUN="true"
+      fi
+      ;;
+  esac
+fi
+
+if [[ "$SMART_SHOULD_RUN" == "true" ]]; then
+  SMART_STATUS="$(sys_smartctl_status 2>/dev/null || echo UNKNOWN)"
+  date '+%Y-%m-%d' > "${STATEDIR}/last_smart_date" 2>/dev/null || true
+fi
+
+# --- Alertas (solo si hay algo realmente accionable) ---
+ALERTS_TEXT=""
+
+if [[ "$LOAD_SEV" == "CRIT" ]]; then
+  ALERTS_TEXT+="• Carga crítica: ${LOAD_PCT}% (límite ${CRIT_LOAD_PCT}%)"$'\n'
+fi
+if [[ "$RAM_SEV" == "CRIT" ]]; then
+  ALERTS_TEXT+="• Memoria crítica: ${RAM_PCT}% (límite ${CRIT_RAM_PCT}%)"$'\n'
+fi
+if [[ "$DISK_SEV" == "CRIT" ]]; then
+  ALERTS_TEXT+="• Disco crítico: ${DISK_PCT}% (límite ${CRIT_DISK_PCT}%)"$'\n'
+fi
+if [[ "$TEMP_SEV" == "CRIT" ]]; then
+  ALERTS_TEXT+="• Temperatura crítica: ${TEMP_CPU_MAX_C}°C (límite ${CRIT_TEMP_C}°C)"$'\n'
+fi
+if [[ "$FAILED_COUNT" -gt 0 ]]; then
+  top_failed="$(printf '%s\n' "$FAILED_LIST" | head -3 | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+  ALERTS_TEXT+="• Servicios fallidos: ${FAILED_COUNT} (${top_failed})"$'\n'
+fi
+if [[ "$NEED_NETWORK" == "true" ]]; then
+  ALERTS_TEXT+="• WAN: no se pudo obtener IP pública"$'\n'
+fi
+if [[ "$SMART_STATUS" == "FAIL" ]]; then
+  ALERTS_TEXT+="• Disco: SMART FAIL"$'\n'
+fi
 
 # alerts-only: métricas + failed (NO updates)
 if [[ "$BOOT_ALERTS_ONLY" == "true" ]]; then
@@ -162,33 +215,41 @@ fi
 # --- Render (render.sh) ---
 SECURITY_BANNER="$(render_security_banner "$UPD_SEC_N")"
 
-CRITICAL_BANNER="$(render_critical_banner "$CRITICAL_ALERTS")"
+CRITICAL_BANNER=""
+if [[ -n "$ALERTS_TEXT" ]]; then
+  CRITICAL_BANNER="$(render_critical_banner "$ALERTS_TEXT")"
+fi
 
 SUMMARY_TXT="$(render_summary \
   "$SERVER_LABEL" "$HOST" "$IP_LAN" "$IP_WAN" "$KERNEL" "$UPTIME" "$DATE" \
   "$LOAD_PCT" "$LOAD_SEV" "$RAM_PCT" "$RAM_SEV" "$DISK_PCT" "$DISK_SEV" \
-  "$TEMP_CPU_MAX_C" "$TEMP_SEV" "$UPDATES_COUNT" "$FAILED_COUNT" \
+  "$TEMP_CPU_MAX_C" "$TEMP_SEV" "$UPDATES_COUNT" "$UPD_SEC_N" "$FAILED_COUNT" \
   "$WARN_LOAD_PCT" "$CRIT_LOAD_PCT" "$WARN_RAM_PCT" "$CRIT_RAM_PCT" \
   "$WARN_DISK_PCT" "$CRIT_DISK_PCT" "$WARN_TEMP_C" "$CRIT_TEMP_C" \
   "$LOAD_TREND" "$RAM_TREND" "$DISK_TREND"
 )"
 
-RECOMMENDATIONS_TXT="$(render_recommendations "$LOAD_PCT" "$RAM_PCT" "$DISK_PCT" "$UPDATES_COUNT" "$UPD_SEC_N" || true)"
+NETWORK_TXT=""
+if [[ "$NEED_NETWORK" == "true" ]]; then
+  NETWORK_INFO="$(sys_network_info 2>/dev/null || true)"
+  NETWORK_TXT="$(render_network_info "$NETWORK_INFO" || true)"
+fi
 
-NETWORK_TXT="$(render_network_info "$NETWORK_INFO" || true)"
-
-TOP_PROCESSES_TXT="$(render_top_processes "$TOP_CPU" "$TOP_RAM" || true)"
+TOP_PROCESSES_TXT=""
+if [[ "$NEED_TOP" == "true" ]]; then
+  TOP_CPU="$(sys_top_processes cpu 5 2>/dev/null || true)"
+  TOP_RAM="$(sys_top_processes mem 5 2>/dev/null || true)"
+  TOP_PROCESSES_TXT="$(render_top_processes "$TOP_CPU" "$TOP_RAM" || true)"
+fi
 
 DISK_HEALTH_TXT="$(render_disk_health "$SMART_STATUS" || true)"
-
-SERVICE_CHANGES_TXT="$(render_service_changes "$SERVICE_CHANGES" || true)"
 
 # límite defensivo por tamaño
 TEMP_GROUPS_TRIM="$(printf '%s\n' "$TEMP_GROUPS" | _trim_lines 90)"
 TEMPS_TXT="$(render_temps_detail "$TEMP_CPU_MAX_C" "$TEMP_SEV" "$TEMP_GROUPS_TRIM")"
 
 UPDATES_TXT="$(render_updates_detail "$UPD_SEC_LIST" "$UPD_REG_LIST" "$UPD_HOLD_LIST")"
-FAILED_TXT="$(render_failed_detail "$FAILED_LIST")"
+SERVICES_TXT="$(render_services_detail "$FAILED_LIST" "$SERVICE_CHANGES")"
 HOWTO_TXT="$(render_update_howto)"
 
 # --- Envío (telegram.sh) ---
@@ -211,6 +272,12 @@ fi
 summary_id="$(tg_send_message "$SUMMARY_TXT")"
 
 # Detalles contextuales
+temps_id="$(tg_send_message "$TEMPS_TXT" "$summary_id")"
+updates_id="$(tg_send_message "$UPDATES_TXT" "$summary_id")"
+services_id="$(tg_send_message "$SERVICES_TXT" "$summary_id")"
+howto_id="$(tg_send_message "$HOWTO_TXT" "$summary_id")"
+
+# Extras (solo cuando hay señal)
 network_id=""
 [[ -n "$NETWORK_TXT" ]] && network_id="$(tg_send_message "$NETWORK_TXT" "$summary_id")"
 
@@ -220,25 +287,13 @@ top_processes_id=""
 disk_health_id=""
 [[ -n "$DISK_HEALTH_TXT" ]] && disk_health_id="$(tg_send_message "$DISK_HEALTH_TXT" "$summary_id")"
 
-service_changes_id=""
-[[ -n "$SERVICE_CHANGES_TXT" ]] && service_changes_id="$(tg_send_message "$SERVICE_CHANGES_TXT" "$summary_id")"
-
-recommendations_id=""
-[[ -n "$RECOMMENDATIONS_TXT" ]] && recommendations_id="$(tg_send_message "$RECOMMENDATIONS_TXT" "$summary_id")"
-
-# Detalles técnicos (como antes)
-temps_id="$(tg_send_message "$TEMPS_TXT" "$summary_id")"
-updates_id="$(tg_send_message "$UPDATES_TXT" "$summary_id")"
-failed_id="$(tg_send_message "$FAILED_TXT" "$summary_id")"
-howto_id="$(tg_send_message "$HOWTO_TXT" "$summary_id")"
-
 # --- Botones URL en el resumen ---
 temps_url="${TG_BASE_MSG_URL}/${temps_id}"
 updates_url="${TG_BASE_MSG_URL}/${updates_id}"
-failed_url="${TG_BASE_MSG_URL}/${failed_id}"
+services_url="${TG_BASE_MSG_URL}/${services_id}"
 howto_url="${TG_BASE_MSG_URL}/${howto_id}"
 
-reply_markup="$(render_buttons_json "$temps_url" "$updates_url" "$failed_url" "$howto_url")"
+reply_markup="$(render_buttons_json "$temps_url" "$updates_url" "$services_url" "$howto_url")"
 tg_edit_reply_markup "$summary_id" "$reply_markup"
 
 # --- Stamp (si todo OK) ---
@@ -251,9 +306,7 @@ echo "summary_id=${summary_id}"
 echo "network_id=${network_id}"
 echo "top_processes_id=${top_processes_id}"
 echo "disk_health_id=${disk_health_id}"
-echo "service_changes_id=${service_changes_id}"
-echo "recommendations_id=${recommendations_id}"
 echo "temps_id=${temps_id} url=${temps_url}"
 echo "updates_id=${updates_id} url=${updates_url}"
-echo "failed_id=${failed_id} url=${failed_url}"
+echo "services_id=${services_id} url=${services_url}"
 echo "howto_id=${howto_id} url=${howto_url}"

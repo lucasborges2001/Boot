@@ -37,9 +37,9 @@ install -m 0750 -o "${USER_NAME}" -g "${GROUP_NAME}" "./boot-report.sh" "${APP_D
 
 echo "[4/7] Instalando libs (lib/*.sh)..."
 install -d -m 0750 -o "${USER_NAME}" -g "${GROUP_NAME}" "${APP_DIR}/lib"
-install -m 0750 -o "${USER_NAME}" -g "${GROUP_NAME}" ./lib/*.sh "${APP_DIR}/lib/"
+install -m 0640 -o "${USER_NAME}" -g "${GROUP_NAME}" ./lib/*.sh "${APP_DIR}/lib/"
 
-echo "[5/7] Instalando .env..."
+echo "[4b/7] Preparando directorios de estado (/run y /var/lib)..."\ninstall -d -m 0750 -o "${USER_NAME}" -g "${GROUP_NAME}" /run/boot-report /var/lib/boot-report\n\necho "[5/7] Instalando .env..."
 if [[ -f "${APP_DIR}/.env" ]]; then
   echo " - ${APP_DIR}/.env ya existe, no lo toco."
 else
