@@ -248,15 +248,15 @@ sys_updates_snapshot() {
   sim="$(apt-get -s upgrade 2>/dev/null || true)"
   holds="$(apt-mark showhold 2>/dev/null || true)"
 
-  python3 - "$holds" -c 'import re,sys
+  python3 -c 'import re,sys
 holds=set([x.strip() for x in sys.argv[1].splitlines() if x.strip()])
 sec=[]; reg=[]
 for line in sys.stdin.read().splitlines():
     if not line.startswith("Inst "):
         continue
-    m=re.match(r"^Inst\\s+(\\S+)(?:\\s+\\[[^\\]]+\\])?\\s+\\(([^\\s]+)\\s+([^)]*)\\)$", line)
+    m=re.match(r"^Inst\s+(\S+)(?:\s+\[[^\]]+\])?\s+\(([^ \s]+)\s+([^)]*)\)$", line)
     if not m:
-        m=re.match(r"^Inst\\s+(\\S+)\\s+\\(([^)]*)\\)$", line)
+        m=re.match(r"^Inst\s+(\S+)\s+\(([^)]*)\)$", line)
         if not m:
             continue
         pkg=m.group(1); origin=m.group(2)
@@ -275,12 +275,13 @@ def uniq(xs):
 
 sec=uniq(sec); reg=uniq(reg)
 print("--SECURITY--")
-print("\\n".join(sec))
+print("\n".join(sec))
 print("--REGULAR--")
-print("\\n".join(reg))
+print("\n".join(reg))
 print("--HELD--")
-print("\\n".join(sorted(holds)))' <<<"$sim"
+print("\n".join(sorted(holds)))' "$holds" <<<"$sim"
 }
+
 
 # --- Mejoras: Indicadores, proximidad, recomendaciones ---
 

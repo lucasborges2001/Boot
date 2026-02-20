@@ -41,9 +41,9 @@ render_updates_detail() {
   local sec_list="$1" reg_list="$2" held_list="$3"
 
   local sec_n reg_n held_n
-  sec_n=$(grep -c . <<<"$sec_list" 2>/dev/null || echo 0)
-  reg_n=$(grep -c . <<<"$reg_list" 2>/dev/null || echo 0)
-  held_n=$(grep -c . <<<"$held_list" 2>/dev/null || echo 0)
+  sec_n=$(grep -c . <<<"$sec_list" 2>/dev/null || true)
+  reg_n=$(grep -c . <<<"$reg_list" 2>/dev/null || true)
+  held_n=$(grep -c . <<<"$held_list" 2>/dev/null || true)
 
   local TOPN=15
 
@@ -77,7 +77,7 @@ render_failed_detail() {
   # args: failed_list
   local failed_list="$1"
   local n
-  n=$(grep -c . <<<"$failed_list" 2>/dev/null || echo 0)
+  n=$(grep -c . <<<"$failed_list" 2>/dev/null || true)
 
   echo "<b>🧩 Servicios / Failed units</b>"
   echo ""

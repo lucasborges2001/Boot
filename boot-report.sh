@@ -112,7 +112,7 @@ TEMP_CPU_MAX_C="$(sys_cpu_pkg_max_c || true)"
 TEMP_GROUPS="$(sys_temp_groups_html || true)"
 
 FAILED_LIST_RAW="$(sys_failed_units_list || true)"
-FAILED_COUNT=$(grep -c . <<<"$FAILED_LIST_RAW" 2>/dev/null || echo 0)
+FAILED_COUNT=$(grep -c . <<<"$FAILED_LIST_RAW" 2>/dev/null || true)
 # límite defensivo por tamaño
 FAILED_LIST="$(printf '%s\n' "$FAILED_LIST_RAW" | _trim_lines 30)"
 
@@ -121,8 +121,8 @@ UPD_SEC_LIST="$(_updates_split_block SECURITY <<<"$UPDATES_SNAPSHOT" || true)"
 UPD_REG_LIST="$(_updates_split_block REGULAR <<<"$UPDATES_SNAPSHOT" || true)"
 UPD_HOLD_LIST="$(_updates_split_block HELD <<<"$UPDATES_SNAPSHOT" || true)"
 
-UPD_SEC_N=$(grep -c . <<<"$UPD_SEC_LIST" 2>/dev/null || echo 0)
-UPD_REG_N=$(grep -c . <<<"$UPD_REG_LIST" 2>/dev/null || echo 0)
+UPD_SEC_N=$(grep -c . <<<"$UPD_SEC_LIST" 2>/dev/null || true)
+UPD_REG_N=$(grep -c . <<<"$UPD_REG_LIST" 2>/dev/null || true)
 UPDATES_COUNT=$((UPD_SEC_N + UPD_REG_N))
 
 # --- Recolección de NEW DATA (mejoras) ---

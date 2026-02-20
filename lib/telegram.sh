@@ -20,9 +20,6 @@ _tg_retry_curl() {
   return 1
 }
 
-# Escapado mínimo para HTML de Telegram
-# https://core.telegram.org/bots/api#html-style
-# Nota: no escapamos comillas porque no las usamos en atributos HTML.
 tg_escape_html() {
   local s="${1:-}"
   s="${s//&/&amp;}"
@@ -32,41 +29,43 @@ tg_escape_html() {
 }
 
 _tg_check_ok_and_get() {
-  # Lee JSON por stdin. Imprime el valor solicitado o sale con error.
-  # Uso: echo "$resp" | _tg_check_ok_and_get 'result.message_id'
   local path="$1"
-  python3 - "$path" <<PY
+  python3 -c '
 import json,sys
 p=sys.argv[1]
+raw=sys.stdin.read()
 try:
-    d=json.load(sys.stdin)
+    d=json.loads(raw)
 except Exception as e:
     print(f"INVALID_JSON: {e}", file=sys.stderr)
+    print("RAW_HEAD:", raw[:200].replace("\n","\\n"), file=sys.stderr)
     sys.exit(2)
-if not d.get('ok'):
-    print(d, file=sys.stderr)
+
+if not d.get("ok"):
+    print(raw, file=sys.stderr)
     sys.exit(1)
+
 cur=d
-for part in p.split('.'):
+for part in p.split("."):
     if isinstance(cur, dict) and part in cur:
         cur=cur[part]
     else:
         print(f"MISSING_PATH: {p}", file=sys.stderr)
         sys.exit(3)
+
 print(cur)
-PY
+' "$path"
 }
 
 _tg_api_post() {
   local method="$1"; shift
   local resp
-  resp="$(_tg_retry_curl curl -sS -X POST "https://api.telegram.org/bot${BOT_TOKEN}/${method}" "$@")" || return 1
+  resp="$(_tg_retry_curl curl -fsS --connect-timeout 8 --max-time 25 -X POST \
+    "https://api.telegram.org/bot${BOT_TOKEN}/${method}" "$@")" || return 1
   echo "$resp"
 }
 
 tg_send_message() {
-  # stdout: message_id
-  # args: text [reply_to_message_id]
   local text="$1"
   local reply_to="${2:-}"
 
@@ -87,11 +86,10 @@ tg_send_message() {
     return 1
   }
 
-  echo "$resp" | _tg_check_ok_and_get 'result.message_id'
+  echo "$resp" | _tg_check_ok_and_get "result.message_id"
 }
 
 tg_edit_reply_markup() {
-  # args: message_id reply_markup_json
   local message_id="$1"
   local reply_markup="$2"
 
@@ -104,6 +102,5 @@ tg_edit_reply_markup() {
     return 1
   }
 
-  # valida ok
-  echo "$resp" | _tg_check_ok_and_get 'ok' >/dev/null
+  echo "$resp" | _tg_check_ok_and_get "ok" >/dev/null
 }
