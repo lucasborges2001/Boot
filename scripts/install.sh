@@ -44,12 +44,14 @@ else
   echo " - Copié .env.example -> ${APP_DIR}/.env (EDITALO con tu BOT_TOKEN y CHAT_ID)."
 fi
 
-echo "[5/6] Instalando unit systemd..."
-install -m 0644 "./systemd/${SERVICE_NAME}" "/etc/systemd/system/${SERVICE_NAME}"
+echo "[5/6] Instalando units systemd..."
+install -m 0644 "./systemd/boot-report.service" "/etc/systemd/system/boot-report.service"
+install -m 0644 "./systemd/boot-report.timer" "/etc/systemd/system/boot-report.timer"
 
-echo "[6/6] Activando servicio..."
+echo "[6/6] Activando timer diario..."
 systemctl daemon-reload
-systemctl enable "${SERVICE_NAME}"
+systemctl enable --now boot-report.timer
+
 
 echo ""
 echo "OK. Próximos pasos:"

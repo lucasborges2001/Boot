@@ -1,19 +1,29 @@
-# Boot Report por Telegram (Ubuntu + systemd)
+# Boot Report por Telegram (Ubuntu + systemd timer)
 
-Servicio `oneshot` que envía un **reporte de salud post-boot** a Telegram con anti-duplicados (lock + stamp), backoff/retry y hardening base de systemd.
+Servicio `oneshot` + `systemd timer` que envía un **reporte diario de salud** a Telegram (por defecto a las **08:30**) con:
+- **Backoff/retry** en el envío a Telegram
+- **Anti-duplicados diario** (lock + stamp por fecha)
+- **Hardening base** en systemd (recomendado)
 
-Incluye:
-- Métricas rápidas: disco, memoria, load por core, temperatura (opcional), uptime
-- Operación: updates pendientes (best effort), flag de `reboot-required`
-- Red: IP LAN, gateway, IP pública (best effort)
-- Anti-duplicados: evita re-envíos dentro de una ventana por `boot_id`
+> El PDF original con el paso a paso está en `docs/Boot.pdf`.
 
-> El PDF completo con el paso a paso está en `docs/Boot.pdf`.
+---
+
+## Qué envía
+- Red: IP LAN e IP pública (best effort)
+- Sistema: hostname, kernel, uptime, fecha/hora
+- Métricas: disco `/`, RAM (MemAvailable), load normalizado por CPU, temperatura (opcional)
+- Salud: `systemctl --failed`
+- Operación: updates pendientes (best effort)
+
+---
 
 ## Requisitos
-- Ubuntu (o distro compatible) + systemd
+- Linux con `systemd`
 - `curl`, `iproute2`, `util-linux` (flock), `coreutils`
-- (Opcional) `lm-sensors` para temperatura
+- (Opcional) `lm-sensors` para temperatura (`sensors`)
+
+---
 
 ## Instalación rápida
 
@@ -23,42 +33,98 @@ cd boot-report
 sudo ./scripts/install.sh
 sudo nano /opt/boot-report/.env
 sudo systemctl start boot-report.service
-journalctl -u boot-report.service -b --no-pager
+journalctl -u boot-report.service --no-pager -n 120
 ```
 
-El servicio queda habilitado para correr en cada boot:
+> Importante: el script instala y habilita el **timer**. El `start` del service es solo para probar manualmente.
 
-```bash
-sudo systemctl enable boot-report.service
-```
+---
 
 ## Configuración (`/opt/boot-report/.env`)
-Copiá desde `.env.example`. Campos obligatorios:
+
+El instalador copia `.env.example` a `/opt/boot-report/.env` si no existe.
+Campos obligatorios:
 
 - `BOT_TOKEN`
 - `CHAT_ID`
 
-Opcionales importantes:
+Opcionales útiles:
 
-- `SERVER_LABEL`
+- `SERVER_LABEL` (nombre amigable del server)
 - `BOOT_ALERTS_ONLY=true` (solo envía si hay WARN/CRIT)
-- `LOCK_TTL_SEC=900` (anti-duplicados)
+- `BOOT_EMOJI=true` (íconos por severidad)
+
+Umbrales (en porcentaje o °C):
+
+- `WARN_LOAD_PCT`, `CRIT_LOAD_PCT`
+- `WARN_RAM_PCT`, `CRIT_RAM_PCT`
+- `WARN_DISK_PCT`, `CRIT_DISK_PCT`
+- `WARN_TEMP_C`, `CRIT_TEMP_C`
+
+---
+
+## Programación (08:30 diario)
+
+Se ejecuta todos los días a las **08:30** en el timezone del servidor.
+
+Ver próxima ejecución:
+
+```bash
+systemctl list-timers --all | grep boot-report
+```
+
+Forzar ejecución manual:
+
+```bash
+sudo systemctl start boot-report.service
+```
+
+---
+
+## Timezone
+
+El `OnCalendar` usa el timezone del sistema. Ver:
+
+```bash
+timedatectl | grep "Time zone"
+```
+
+Si necesitás cambiarlo:
+
+```bash
+sudo timedatectl set-timezone America/Chicago
+```
+
+---
 
 ## Troubleshooting
 
-- Ver logs:
-  ```bash
-  journalctl -u boot-report.service -b --no-pager
-  ```
-- Probar conectividad:
-  - DNS: `getent hosts api.telegram.org`
-  - Ruta: `ip route get 1.1.1.1`
-- Si Telegram responde 200 pero no llega nada, revisá `CHAT_ID` y permisos del bot (grupos/canales).
+Ver logs del service:
+
+```bash
+journalctl -u boot-report.service --no-pager -n 200
+```
+
+Ver logs del timer:
+
+```bash
+journalctl -u boot-report.timer --no-pager -n 200
+```
+
+Probar conectividad:
+- DNS: `getent hosts api.telegram.org`
+- Ruta: `ip route get 1.1.1.1`
+
+Si Telegram responde OK pero no llega nada, revisar `CHAT_ID` y permisos del bot (grupos/canales).
+
+---
 
 ## Desinstalar
 ```bash
 sudo ./scripts/uninstall.sh
 ```
+
+---
 
 ## Estructura
 
@@ -66,8 +132,11 @@ sudo ./scripts/uninstall.sh
 .
 ├─ boot-report.sh
 ├─ .env.example
-├─ systemd/boot-report.service
-├─ scripts/install.sh
-├─ scripts/uninstall.sh
+├─ systemd/
+│  ├─ boot-report.service
+│  └─ boot-report.timer
+├─ scripts/
+│  ├─ install.sh
+│  └─ uninstall.sh
 └─ docs/Boot.pdf
 ```

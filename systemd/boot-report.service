@@ -1,41 +1,39 @@
 [Unit]
-Description=Telegram Boot Report
+Description=Send daily report to Telegram
 After=network-online.target
 Wants=network-online.target
-StartLimitIntervalSec=0
 
 [Service]
 Type=oneshot
 User=bootreport
 Group=bootreport
+
+# /var/lib/boot-report (persistente) para stamp diario
+StateDirectory=boot-report
+StateDirectoryMode=0750
+
+# /run/boot-report para lock temporal
+RuntimeDirectory=boot-report
+RuntimeDirectoryMode=0750
+Environment=XDG_RUNTIME_DIR=/run/boot-report
+
 ExecStart=/opt/boot-report/boot-report.sh
 TimeoutStartSec=240
 
-# Runtime dir en /run con permisos correctos para user no-root
-RuntimeDirectory=boot-report
-RuntimeDirectoryMode=0750
-
-# Reintento si falla Telegram/red
-Restart=on-failure
-RestartSec=30
-
-# Hardening (baseline compatible con curl + lectura de sistema)
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
+ProtectControlGroups=true
 ProtectKernelTunables=true
 ProtectKernelModules=true
-ProtectControlGroups=true
 LockPersonality=true
-MemoryDenyWriteExecute=true
-RestrictSUIDSGID=true
-RestrictNamespaces=true
 RestrictRealtime=true
-RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
-UMask=0077
-SystemCallArchitectures=native
-SystemCallFilter=@system-service @network-io
+RestrictSUIDSGID=true
+MemoryDenyWriteExecute=true
+
+ReadOnlyPaths=/proc /sys
+ReadWritePaths=/run/boot-report /var/lib/boot-report
 
 [Install]
 WantedBy=multi-user.target
