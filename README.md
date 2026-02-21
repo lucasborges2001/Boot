@@ -79,6 +79,15 @@ Forzar ejecución manual:
 sudo systemctl start boot-report.service
 ```
 
+Si no envía nada y en logs aparece `SKIP: ya se ejecutó hoy`, es el anti‑duplicado diario.
+Para forzar un envío de prueba:
+
+```bash
+sudo rm -f /var/lib/boot-report/last_run_date
+sudo systemctl start boot-report.service
+```
+
+
 ---
 
 ## Timezone
@@ -118,6 +127,25 @@ Probar conectividad:
 Si Telegram responde OK pero no llega nada, revisar `CHAT_ID` y permisos del bot (grupos/canales).
 
 ---
+
+## Modificar
+
+> Nota (zsh): si tu shell es zsh, el glob `*.sh` puede fallar con `no matches found`.
+> En ese caso usá los `find` de abajo.
+
+Usamos 
+sudo tee /opt/boot-report/lib/system.sh >/dev/null <<'EOF'
+** Archivo
+EOF
+
+sudo chown bootreport:bootreport /opt/boot-report/boot-report.sh
+sudo chmod 0750 /opt/boot-report/boot-report.sh
+
+sudo find /opt/boot-report/lib -maxdepth 1 -type f -name "*.sh" -exec chown bootreport:bootreport {} \;
+sudo find /opt/boot-report/lib -maxdepth 1 -type f -name "*.sh" -exec chmod 0640 {} \;
+
+sudo systemctl restart boot-report.service
+sudo journalctl -u boot-report.service -n 120 --no-pager
 
 ## Desinstalar
 ```bash

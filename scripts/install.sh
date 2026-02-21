@@ -1,4 +1,3 @@
-\
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -25,30 +24,34 @@ need_root
 need_cmd systemctl
 need_cmd install
 
-echo "[1/6] Creando usuario dedicado (${USER_NAME}) si no existe..."
+echo "[1/7] Creando usuario dedicado (${USER_NAME}) si no existe..."
 if ! id -u "${USER_NAME}" >/dev/null 2>&1; then
   useradd --system --home "${APP_DIR}" --shell /usr/sbin/nologin --user-group "${USER_NAME}"
 fi
 
-echo "[2/6] Creando directorio ${APP_DIR}..."
+echo "[2/7] Creando directorio ${APP_DIR}..."
 install -d -m 0750 -o "${USER_NAME}" -g "${GROUP_NAME}" "${APP_DIR}"
 
-echo "[3/6] Instalando script..."
+echo "[3/7] Instalando script principal..."
 install -m 0750 -o "${USER_NAME}" -g "${GROUP_NAME}" "./boot-report.sh" "${APP_DIR}/boot-report.sh"
 
-echo "[4/6] Instalando .env..."
+echo "[4/7] Instalando libs (lib/*.sh)..."
+install -d -m 0750 -o "${USER_NAME}" -g "${GROUP_NAME}" "${APP_DIR}/lib"
+install -m 0640 -o "${USER_NAME}" -g "${GROUP_NAME}" ./lib/*.sh "${APP_DIR}/lib/"
+
+echo "[4b/7] Preparando directorios de estado (/run y /var/lib)..."\ninstall -d -m 0750 -o "${USER_NAME}" -g "${GROUP_NAME}" /run/boot-report /var/lib/boot-report\n\necho "[5/7] Instalando .env..."
 if [[ -f "${APP_DIR}/.env" ]]; then
   echo " - ${APP_DIR}/.env ya existe, no lo toco."
 else
   install -m 0640 -o "${USER_NAME}" -g "${GROUP_NAME}" "./.env.example" "${APP_DIR}/.env"
-  echo " - Copié .env.example -> ${APP_DIR}/.env (EDITALO con tu BOT_TOKEN y CHAT_ID)."
+  echo " - Copié .env.example -> ${APP_DIR}/.env (EDITALO con tu BOT_TOKEN, CHAT_ID y TG_INTERNAL_CHAT_ID)."
 fi
 
-echo "[5/6] Instalando units systemd..."
+echo "[6/7] Instalando units systemd..."
 install -m 0644 "./systemd/boot-report.service" "/etc/systemd/system/boot-report.service"
 install -m 0644 "./systemd/boot-report.timer" "/etc/systemd/system/boot-report.timer"
 
-echo "[6/6] Activando timer diario..."
+echo "[7/7] Activando timer diario..."
 systemctl daemon-reload
 systemctl enable --now boot-report.timer
 

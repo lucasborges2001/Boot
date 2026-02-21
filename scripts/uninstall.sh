@@ -1,4 +1,3 @@
-\
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -13,6 +12,7 @@ fi
 
 systemctl disable --now "${SERVICE_NAME}" 2>/dev/null || true
 rm -f "/etc/systemd/system/${SERVICE_NAME}"
+rm -f "/etc/systemd/system/boot-report.timer" 2>/dev/null || true
 systemctl daemon-reload
 
 rm -rf "${APP_DIR}"
