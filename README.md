@@ -63,6 +63,25 @@ Umbrales (en porcentaje o °C):
 
 ---
 
+
+## Evidencia persistente
+
+Cada corrida deja artefactos en `/var/lib/boot-report/reports/<RUN_ID>/`:
+
+- `report.json` con señales, severidades, fases y message ids
+- `summary.txt` con el resumen principal enviado
+- symlink `latest/` a la última corrida
+
+Esto permite revisar historial sin depender solo de Telegram.
+
+## Política de notificación
+
+`BOOT_NOTIFY_POLICY` controla cuándo enviar Telegram:
+
+- `always`: siempre envía resumen
+- `issues`: solo envía si hay WARN/CRIT
+- `never`: genera reportes locales sin enviar
+
 ## Programación (08:30 diario)
 
 Se ejecuta todos los días a las **08:30** en el timezone del servidor.

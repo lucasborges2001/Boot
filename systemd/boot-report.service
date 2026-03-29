@@ -33,7 +33,7 @@ RestrictSUIDSGID=true
 MemoryDenyWriteExecute=true
 
 ReadOnlyPaths=/proc /sys
-ReadWritePaths=/run/boot-report /var/lib/boot-report
+ReadWritePaths=/run/boot-report /var/lib/boot-report /opt/boot-report
 
 [Install]
 WantedBy=multi-user.target
