@@ -1,0 +1,11 @@
+Boot report: server-01
+Generated at: 2026-06-20T10:30:00-03:00
+Status: ok - Servidor estable
+Uptime seconds: 123456
+Load: 0.21 / 0.18 / 0.16
+RAM used: 47.5%
+Disk root used: 62.1%
+Temperature: 48 C
+Updates: total=4 security=1 reboot_required=False
+Failed services: 0
+Telegram: enabled=True last_send_ok=True message_id=123

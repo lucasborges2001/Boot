@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TMP_DIR="$(mktemp -d)"
+trap 'rm -rf "$TMP_DIR"' EXIT
+
+export BOOT_REPORTS_DIR="$TMP_DIR/reports"
+export BOOT_SEND_TELEGRAM=false
+export BOOT_DISABLE_LOCK=true
+
+"$DIR/bin/boot-report" --no-telegram --print > "$TMP_DIR/report.json"
+
+if command -v python3 >/dev/null 2>&1; then
+  python3 -m json.tool "$TMP_DIR/report.json" >/dev/null
+elif command -v php >/dev/null 2>&1; then
+  php -r '$s=file_get_contents($argv[1]); json_decode($s, true); exit(json_last_error() === JSON_ERROR_NONE ? 0 : 1);' "$TMP_DIR/report.json"
+fi
+
+test -f "$BOOT_REPORTS_DIR/latest/report.json"
+test -f "$BOOT_REPORTS_DIR/latest/summary.txt"
+echo "boot-report-test OK"

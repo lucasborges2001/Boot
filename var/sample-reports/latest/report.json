@@ -1,0 +1,44 @@
+{
+  "module": "boot",
+  "schema_version": 1,
+  "generated_at": "2026-06-20T10:30:00-03:00",
+  "server": {
+    "hostname": "server-01",
+    "kernel": "6.x",
+    "uptime_seconds": 123456,
+    "ip_lan": "192.168.1.10",
+    "ip_wan": null
+  },
+  "status": {
+    "overall": "ok",
+    "severity": "ok",
+    "summary": "Servidor estable"
+  },
+  "metrics": {
+    "cpu_load_1m": 0.21,
+    "cpu_load_5m": 0.18,
+    "cpu_load_15m": 0.16,
+    "ram_used_percent": 47.5,
+    "disk_root_used_percent": 62.1,
+    "temperature_c": 48
+  },
+  "updates": {
+    "total": 4,
+    "security": 1,
+    "reboot_required": false
+  },
+  "services": {
+    "failed_count": 0,
+    "failed": []
+  },
+  "telegram": {
+    "enabled": true,
+    "last_send_ok": true,
+    "message_id": 123,
+    "description": null
+  },
+  "artifacts": {
+    "report_json": "/var/lib/boot-report/reports/latest/report.json",
+    "summary_txt": "/var/lib/boot-report/reports/latest/summary.txt"
+  }
+}

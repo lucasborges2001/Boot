@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+"$DIR/scripts/server/package-server.sh"
+"$DIR/scripts/web/package-web.sh"
+echo "Packages generated under $DIR/dist"

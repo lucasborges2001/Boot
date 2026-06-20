@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BOOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+boot_resolve_base_dir_shell() {
+  if [[ -n "${BASE_DIR:-}" && -f "$BASE_DIR/lib/shell/env.sh" ]]; then
+    printf '%s\n' "$BASE_DIR"
+    return 0
+  fi
+
+  local candidate
+  for candidate in \
+    "$BOOT_DIR/../Base" \
+    "$(cd "$BOOT_DIR/.." 2>/dev/null && pwd)/Base" \
+    "/opt/base"; do
+    if [[ -f "$candidate/lib/shell/env.sh" ]]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+usage() {
+  cat <<'TXT'
+Usage: boot-report [--env FILE] [--reports-dir DIR] [--no-telegram] [--print]
+
+Genera un snapshot Boot, lo persiste en reports/latest y opcionalmente envía
+un mensaje específico del módulo por Telegram usando Base/lib/shell/telegram.sh.
+TXT
+}
+
+BOOT_NO_TELEGRAM=false
+BOOT_PRINT=false
+BOOT_EXTRA_ENV_FILE=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --env) BOOT_EXTRA_ENV_FILE="${2:?missing env file}"; shift 2 ;;
+    --reports-dir) export BOOT_REPORTS_DIR="${2:?missing reports dir}"; shift 2 ;;
+    --no-telegram) BOOT_NO_TELEGRAM=true; shift ;;
+    --print) BOOT_PRINT=true; shift ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "Unknown argument: $1" >&2; usage >&2; exit 2 ;;
+  esac
+done
+
+BASE_DIR="$(boot_resolve_base_dir_shell)" || {
+  echo "Unable to resolve Base. Set BASE_DIR=/opt/base or keep Base next to Boot." >&2
+  exit 2
+}
+export BASE_DIR BOOT_DIR
+
+source "$BASE_DIR/lib/shell/env.sh"
+source "$BASE_DIR/lib/shell/log.sh"
+source "$BASE_DIR/lib/shell/json.sh"
+source "$BASE_DIR/lib/shell/lock.sh"
+source "$BASE_DIR/lib/shell/time.sh"
+source "$BASE_DIR/lib/shell/telegram.sh"
+
+source "$BOOT_DIR/lib/shell/collect.sh"
+source "$BOOT_DIR/lib/shell/render.sh"
+source "$BOOT_DIR/lib/shell/persist.sh"
+
+base_env_load_file "$BOOT_DIR/.env"
+base_env_load_file "$BOOT_DIR/config/server.env"
+base_env_load_file "/etc/boot-report/boot-report.env"
+if [[ -n "$BOOT_EXTRA_ENV_FILE" ]]; then
+  base_env_load_file "$BOOT_EXTRA_ENV_FILE"
+fi
+
+if [[ "$(base_env_bool BOOT_ENABLED true)" != "true" ]]; then
+  base_log_info "Boot report disabled by BOOT_ENABLED=false"
+  exit 0
+fi
+
+BOOT_REPORTS_DIR="${BOOT_REPORTS_DIR:-/var/lib/boot-report/reports}"
+BOOT_RETENTION_DAYS="${BOOT_RETENTION_DAYS:-14}"
+BOOT_SEND_TELEGRAM="${BOOT_SEND_TELEGRAM:-true}"
+
+lock_file="${BOOT_LOCK_FILE:-${BOOT_REPORTS_DIR}/.boot-report.lock}"
+if [[ "${BOOT_DISABLE_LOCK:-false}" != "true" ]]; then
+  base_lock_acquire "$lock_file" 5 BOOT_LOCK_FD || {
+    base_log_warn "Another boot-report process is running"
+    exit 75
+  }
+  trap 'base_lock_release "${BOOT_LOCK_FD:-}"' EXIT
+fi
+
+json="$(boot_collect_report_json)"
+summary="$(boot_render_summary_text "$json")"
+
+telegram_enabled="$(base_env_bool BOOT_SEND_TELEGRAM true)"
+if [[ "$BOOT_NO_TELEGRAM" == "true" ]]; then
+  telegram_enabled="false"
+fi
+
+telegram_ok="null"
+telegram_message_id="null"
+telegram_error=""
+
+if [[ "$telegram_enabled" == "true" ]]; then
+  html="$(boot_render_telegram_html "$json")"
+  set +e
+  response="$(base_telegram_send_html "$html")"
+  send_exit=$?
+  set -e
+  if [[ "$send_exit" -eq 0 && "$(base_telegram_parse_ok "$response" 2>/dev/null || true)" == "true" ]]; then
+    telegram_ok="true"
+    telegram_message_id="$(base_telegram_parse_message_id "$response" 2>/dev/null || printf 'null')"
+  else
+    telegram_ok="false"
+    telegram_error="$(base_telegram_parse_error_description "$response" 2>/dev/null || printf 'Telegram send failed')"
+    base_log_warn "Telegram send failed: ${telegram_error}"
+  fi
+else
+  telegram_ok="null"
+fi
+
+json="$(boot_report_set_telegram_result "$json" "$telegram_enabled" "$telegram_ok" "$telegram_message_id" "$telegram_error")"
+summary="$(boot_render_summary_text "$json")"
+
+boot_persist_report "$json" "$summary" "$BOOT_REPORTS_DIR"
+boot_prune_old_reports "$BOOT_REPORTS_DIR" "$BOOT_RETENTION_DAYS" || true
+
+if [[ "$BOOT_PRINT" == "true" ]]; then
+  printf '%s\n' "$json"
+else
+  base_log_info "Boot report generated at ${BOOT_REPORTS_DIR}/latest/report.json"
+fi

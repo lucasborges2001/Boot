@@ -1,0 +1,12 @@
+services:
+  boot-web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      BOOT_REPORTS_DIR: /app/Boot/var/sample-reports
+      BOOT_SEND_TELEGRAM: "false"
+    volumes:
+      - ..:/app/Boot:ro

@@ -1,9 +1,12 @@
 [Unit]
-Description=Run daily report at 08:30
+Description=Run Boot server observability report every 15 minutes
 
 [Timer]
-OnCalendar=*-*-* 08:30:00
+OnBootSec=2min
+OnUnitActiveSec=15min
+AccuracySec=30s
 Persistent=true
+Unit=boot-report.service
 
 [Install]
 WantedBy=timers.target

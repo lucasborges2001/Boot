@@ -1,39 +1,20 @@
 [Unit]
-Description=Send daily report to Telegram
-After=network-online.target
+Description=Boot server observability report
+Documentation=file:/opt/boot-report/README-INSTALL.md
 Wants=network-online.target
+After=network-online.target
 
 [Service]
 Type=oneshot
-User=bootreport
-Group=bootreport
-
-# /var/lib/boot-report (persistente) para stamp diario
-StateDirectory=boot-report
-StateDirectoryMode=0750
-
-# /run/boot-report para lock temporal
-RuntimeDirectory=boot-report
-RuntimeDirectoryMode=0750
-Environment=XDG_RUNTIME_DIR=/run/boot-report
-
-ExecStart=/opt/boot-report/boot-report.sh
-TimeoutStartSec=240
-
+EnvironmentFile=-/opt/boot-report/config/server.env
+EnvironmentFile=-/etc/boot-report/boot-report.env
+ExecStart=/opt/boot-report/bin/boot-report
+User=root
+Group=root
 NoNewPrivileges=true
 PrivateTmp=true
-ProtectSystem=strict
+ProtectSystem=full
 ProtectHome=true
-ProtectControlGroups=true
-ProtectKernelTunables=true
-ProtectKernelModules=true
+ReadWritePaths=/var/lib/boot-report /opt/boot-report
 LockPersonality=true
-RestrictRealtime=true
-RestrictSUIDSGID=true
 MemoryDenyWriteExecute=true
-
-ReadOnlyPaths=/proc /sys
-ReadWritePaths=/run/boot-report /var/lib/boot-report /opt/boot-report
-
-[Install]
-WantedBy=multi-user.target
