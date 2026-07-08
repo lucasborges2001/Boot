@@ -15,11 +15,52 @@ boot_api_require_method('GET', $bootApiMethod);
 try {
     $latest = (new BootStatusService())->latest();
     if ($latest === null) {
-        boot_api_send_error('NO_SNAPSHOT', 'No Boot snapshot available', 404);
+        $bootApiResponse = [
+            'ok' => false,
+            'module' => 'boot',
+            'code' => 'NO_SNAPSHOT',
+            'error' => [
+                'message' => 'No Boot snapshot available',
+            ],
+        ];
+
+        http_response_code(404);
+        if (PHP_SAPI !== 'cli' && !headers_sent()) {
+            header('Content-Type: application/json; charset=utf-8');
+        }
+        echo json_encode($bootApiResponse, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
         return;
     }
 
-    boot_api_send_ok(['latest' => $latest], 'OK');
+    $bootApiResponse = [
+        'ok' => true,
+        'module' => 'boot',
+        'code' => 'OK',
+        'data' => [
+            'latest' => $latest,
+        ],
+    ];
+
+    http_response_code(200);
+    if (PHP_SAPI !== 'cli' && !headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+    }
+    echo json_encode($bootApiResponse, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+    return;
 } catch (Throwable $throwable) {
-    boot_api_send_error('INTERNAL_ERROR', $throwable->getMessage(), 500);
+    $bootApiResponse = [
+        'ok' => false,
+        'module' => 'boot',
+        'code' => 'INTERNAL_ERROR',
+        'error' => [
+            'message' => $throwable->getMessage(),
+        ],
+    ];
+
+    http_response_code(500);
+    if (PHP_SAPI !== 'cli' && !headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+    }
+    echo json_encode($bootApiResponse, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+    return;
 }

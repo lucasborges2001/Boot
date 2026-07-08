@@ -1,7 +1,10 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * @file public_html/superadmin/partials/contracts.php
- * @brief Renderiza contratos read-only de paths y schema Boot en SuperAdmin.
+ * @brief Renderiza contratos y paths read-only del panel Boot SuperAdmin.
  */
 ?>
 <section class="card">

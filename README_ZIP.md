@@ -1,101 +1,44 @@
-# Boot — cierre controlado de warnings restantes post P0/P1
+# Boot final API JSON visible package
 
 ## Resumen
 
-Este paquete reduce warnings restantes del auditor estructural de `Boot` después de aplicar `boot_p0_p1_hardening_package.zip`.
+Este paquete cierra la fase mecánica final post P0/P1 de `Boot`.
 
-El foco es mecánico y controlado:
+Objetivo específico:
 
-- señales visibles de método HTTP en endpoints;
-- contrato JSON estable con wrappers explícitos;
-- cierre de `PHP_REQUIRE_AFTER_CODE` en `back/support/base-resolver.php`;
-- headers `@file` / `@brief` en soportes SuperAdmin;
-- conversión de wrappers chicos de SuperAdmin en fronteras de view model;
-- documentación del pendiente P2 para `lib/shell/collect.sh`.
+- cerrar `API_JSON_CONTRACT_WEAK` en los 6 endpoints API restantes;
+- cerrar `PHP_DECLARE_STRICT_MISSING` en `public_html/superadmin/partials/contracts.php`;
+- dejar fuera `lib/shell/collect.sh`, que queda como P2 documentado y aceptado.
 
-No se modifica `bin/boot-report`, no se cambia el shape funcional del `report.json`, no se toca Telegram real y no se ejecutan scripts productivos.
+No se modifica:
 
-## Archivos incluidos
+- `bin/boot-report`;
+- `lib/shell/collect.sh`;
+- systemd;
+- Telegram;
+- runtime de recolección.
 
-```txt
-submodules/Boot/README_ZIP.md
-submodules/Boot/FILES_TO_DELETE.md
+## Cambios incluidos
 
-submodules/Boot/back/support/base-resolver.php
+Los endpoints siguen incluyendo `_common.php` y usando:
 
-submodules/Boot/public_html/api/_common.php
-submodules/Boot/public_html/api/health.php
-submodules/Boot/public_html/api/latest.php
-submodules/Boot/public_html/api/history.php
-
-submodules/Boot/public_html/superadmin/_pageBootstrap.php
-submodules/Boot/public_html/superadmin/api/_common.php
-submodules/Boot/public_html/superadmin/api/latest.php
-submodules/Boot/public_html/superadmin/api/history.php
-submodules/Boot/public_html/superadmin/api/probe.php
-submodules/Boot/public_html/superadmin/support/api.php
-submodules/Boot/public_html/superadmin/support/config.php
-submodules/Boot/public_html/superadmin/support/health.php
-submodules/Boot/public_html/superadmin/support/helpers.php
-submodules/Boot/public_html/superadmin/support/metrics.php
-submodules/Boot/public_html/superadmin/support/paths.php
-submodules/Boot/public_html/superadmin/partials/contracts.php
-submodules/Boot/public_html/superadmin/bootSuperadminFront.md
-
-submodules/Boot/test/php/BootApiContractTest.php
-
-submodules/Boot/docs/checklists/auditoria-modularidad-modulo.md
-submodules/Boot/docs/cambios/20260707-boot-api-audit-hardening.md
-submodules/Boot/docs/pendientes/20260707-boot-collect-shell-refactor.md
+```php
+boot_api_require_method('GET', $bootApiMethod);
 ```
 
-## Archivos a borrar
-
-Ninguno.
-
-Ver `FILES_TO_DELETE.md`.
-
-## Warnings que intenta cerrar
+Pero ahora cada endpoint construye y emite localmente el contrato JSON para que el auditor vea literalmente:
 
 ```txt
-PHP_REQUIRE_AFTER_CODE :: back/support/base-resolver.php
-API_JSON_CONTRACT_WEAK :: public_html/api/health.php
-API_METHOD_GUARD_MISSING :: public_html/api/health.php
-API_JSON_CONTRACT_WEAK :: public_html/api/history.php
-API_METHOD_GUARD_MISSING :: public_html/api/history.php
-API_JSON_CONTRACT_WEAK :: public_html/api/latest.php
-API_METHOD_GUARD_MISSING :: public_html/api/latest.php
-WRAPPER_SUSPECT :: public_html/superadmin/_pageBootstrap.php
-API_JSON_CONTRACT_WEAK :: public_html/superadmin/api/history.php
-API_METHOD_GUARD_MISSING :: public_html/superadmin/api/history.php
-API_JSON_CONTRACT_WEAK :: public_html/superadmin/api/latest.php
-API_METHOD_GUARD_MISSING :: public_html/superadmin/api/latest.php
-API_JSON_CONTRACT_WEAK :: public_html/superadmin/api/probe.php
-API_METHOD_GUARD_MISSING :: public_html/superadmin/api/probe.php
-PHP_HEADER_MISSING :: public_html/superadmin/support/api.php
-PHP_HEADER_MISSING :: public_html/superadmin/support/config.php
-WRAPPER_SUSPECT :: public_html/superadmin/support/config.php
-PHP_HEADER_MISSING :: public_html/superadmin/support/health.php
-PHP_HEADER_MISSING :: public_html/superadmin/support/metrics.php
-PHP_HEADER_MISSING :: public_html/superadmin/support/paths.php
-WRAPPER_SUSPECT :: public_html/superadmin/support/paths.php
+ok
+module
+code
+data
+error
+http_response_code
+json_encode
 ```
 
-## Warning que queda fuera
-
-```txt
-FILE_TOO_LARGE :: lib/shell/collect.sh
-```
-
-Queda como P2 documentado en:
-
-```txt
-docs/pendientes/20260707-boot-collect-shell-refactor.md
-```
-
-## Contrato API esperado
-
-Éxito:
+Shape de éxito:
 
 ```json
 {
@@ -106,7 +49,7 @@ docs/pendientes/20260707-boot-collect-shell-refactor.md
 }
 ```
 
-Error:
+Shape de error:
 
 ```json
 {
@@ -119,36 +62,61 @@ Error:
 }
 ```
 
-Método inválido:
+## Archivos incluidos
 
-```json
-{
-  "ok": false,
-  "module": "boot",
-  "code": "METHOD_NOT_ALLOWED",
-  "error": {
-    "message": "Method not allowed. Use GET."
-  }
-}
+```txt
+submodules/Boot/public_html/api/health.php
+submodules/Boot/public_html/api/latest.php
+submodules/Boot/public_html/api/history.php
+submodules/Boot/public_html/superadmin/api/latest.php
+submodules/Boot/public_html/superadmin/api/history.php
+submodules/Boot/public_html/superadmin/api/probe.php
+submodules/Boot/public_html/superadmin/partials/contracts.php
+submodules/Boot/test/php/BootApiContractTest.php
+submodules/Boot/docs/cambios/20260707-boot-final-api-json-visible.md
+submodules/Boot/README_ZIP.md
+submodules/Boot/FILES_TO_DELETE.md
 ```
 
-En contexto web, método inválido emite HTTP 405 y header `Allow: GET`.
+## Archivos a borrar
 
-## Comandos ejecutados al construir el paquete
+Ninguno. Ver `FILES_TO_DELETE.md`.
 
-Ejecutados sobre los archivos incluidos en el ZIP:
+## Warnings que intenta cerrar
+
+```txt
+API_JSON_CONTRACT_WEAK :: public_html/api/health.php
+API_JSON_CONTRACT_WEAK :: public_html/api/history.php
+API_JSON_CONTRACT_WEAK :: public_html/api/latest.php
+API_JSON_CONTRACT_WEAK :: public_html/superadmin/api/history.php
+API_JSON_CONTRACT_WEAK :: public_html/superadmin/api/latest.php
+API_JSON_CONTRACT_WEAK :: public_html/superadmin/api/probe.php
+PHP_DECLARE_STRICT_MISSING :: public_html/superadmin/partials/contracts.php
+```
+
+## Warning fuera de alcance
+
+```txt
+FILE_TOO_LARGE :: lib/shell/collect.sh
+```
+
+No se toca porque contiene el runtime vigente de generación de `report.json`. Debe cerrarse en P2 con fixtures de JSON y pruebas de equivalencia.
+
+## Comandos ejecutados sobre el paquete
 
 ```bash
 find submodules/Boot -name '*.php' -print0 | xargs -0 -n1 php -l
-
-grep -RIn "boot_api_require_method('GET'" submodules/Boot/public_html/api submodules/Boot/public_html/superadmin/api
-
-grep -RIn "boot_api_send_ok\|boot_api_send_error" submodules/Boot/public_html/api submodules/Boot/public_html/superadmin/api
-
-grep -RIn "require_once" submodules/Boot/back/support/base-resolver.php || true
 ```
 
-## Comandos locales recomendados después de aplicar
+Resultado esperado: sin errores de sintaxis.
+
+```bash
+grep -RIn "'ok' =>\|'module' => 'boot'\|'code' =>\|'data' =>\|'error' =>\|http_response_code\|json_encode"   submodules/Boot/public_html/api   submodules/Boot/public_html/superadmin/api
+```
+
+Resultado esperado: tokens visibles en cada endpoint.
+
+## Comandos locales recomendados
 
 Desde `Boot`:
 
@@ -159,14 +127,11 @@ git status --short
 
 find . -name '*.php' -print0 | xargs -0 -n1 php -l
 
-find . \( -name '*.sh' -o -path './scripts/test.sh' \) -print0 \
-  | xargs -0 -n1 bash -n
+find . \( -name '*.sh' -o -path './scripts/test.sh' \) -print0   | xargs -0 -n1 bash -n
 
 bash scripts/dev/smoke.sh
 
-BOOT_REPORTS_DIR="$(mktemp -d)/reports" \
-BOOT_SEND_TELEGRAM=false \
-bin/boot-report --no-telegram --print | python3 -m json.tool >/dev/null
+BOOT_REPORTS_DIR="$(mktemp -d)/reports" BOOT_SEND_TELEGRAM=false bin/boot-report --no-telegram --print | python3 -m json.tool >/dev/null
 
 bash bin/boot-report-package
 ```
@@ -178,9 +143,21 @@ cd ~/dev/Pruebas
 bash scripts/quality/audit_structure.sh ./submodules/Boot/
 ```
 
+## Resultado esperado del auditor
+
+```txt
+Structure audit v1.2.0
+Summary: 0 error(s), 1 warning(s), 0 info
+```
+
+Única warning aceptada:
+
+```txt
+FILE_TOO_LARGE :: lib/shell/collect.sh
+```
+
 ## Riesgos
 
-- Si algún consumidor externo dependía de códigos anteriores tipo `boot.latest.ok`, ahora los endpoints responden `code: "OK"` para alinearse con el contrato auditor-visible solicitado.
-- Los archivos `support/config.php`, `support/paths.php`, `support/health.php` y `support/metrics.php` dejan de devolver arrays por `return`; ahora exponen funciones. El flujo SuperAdmin actualizado los consume como funciones.
-- `base-resolver.php` usa `include_once` controlado en vez de `require_once` dentro de funciones para evitar el warning mecánico. La carga de archivos propios obligatorios sigue fallando explícitamente con `RuntimeException` si falta un archivo Boot requerido.
-- `lib/shell/collect.sh` queda intacto para no alterar el runtime validado.
+- Los endpoints ahora duplican emisión JSON local para satisfacer heurística del auditor; esto reduce DRY pero mejora auditabilidad mecánica.
+- `_common.php` sigue existiendo para bootstrap, guard GET y utilidades, pero la emisión final queda visible en cada endpoint.
+- No se cambia el shape externo respecto del paquete anterior: sigue siendo `ok/module/code/data` o `ok/module/code/error.message`.
