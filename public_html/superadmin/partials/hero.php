@@ -1,3 +1,12 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * @file public_html/superadmin/partials/hero.php
+ * @brief Encabezado de estado para la pantalla SuperAdmin de Boot.
+ */
+?>
 <section class="hero card">
   <div>
     <p class="eyebrow">Observabilidad del servidor</p>

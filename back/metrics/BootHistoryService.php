@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+/**
+ * @file back/metrics/BootHistoryService.php
+ * @brief Lista snapshots históricos Boot desde reports_dir o fixtures sample.
+ */
+
 final class BootHistoryService
 {
     private $reportsDir;

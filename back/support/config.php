@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+/**
+ * @file back/support/config.php
+ * @brief Configuración segura de Boot desde variables de entorno y overrides explícitos.
+ */
+
 if (!function_exists('boot_env_bool')) {
     function boot_env_bool(string $name, bool $default): bool
     {

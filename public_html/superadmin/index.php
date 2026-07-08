@@ -1,4 +1,14 @@
-<?php require __DIR__ . '/_pageBootstrap.php'; ?>
+<?php
+
+declare(strict_types=1);
+
+/**
+ * @file public_html/superadmin/index.php
+ * @brief Vista SuperAdmin read-only de observabilidad Boot.
+ */
+
+require __DIR__ . '/_pageBootstrap.php';
+?>
 <!doctype html>
 <html lang="es">
 <head>

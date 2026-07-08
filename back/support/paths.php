@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+/**
+ * @file back/support/paths.php
+ * @brief Resolución de rutas de reportes reales y fixtures sample de Boot.
+ */
+
 if (!function_exists('boot_path_join')) {
     function boot_path_join(string ...$parts): string
     {

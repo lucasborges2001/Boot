@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+/**
+ * @file back/metrics/BootReportReader.php
+ * @brief Lee el último report.json Boot y lo entrega crudo o normalizado para API.
+ */
+
 final class BootReportReader implements MetricSnapshotReader
 {
     private $path;

@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+/**
+ * @file back/metrics/BootStatusService.php
+ * @brief Servicio de lectura read-only para health, latest y resumen SuperAdmin de Boot.
+ */
+
 final class BootStatusService
 {
     private $reader;

@@ -3,107 +3,14 @@
 declare(strict_types=1);
 
 /**
- * Boot module bootstrap.
- *
- * Boot depends on Base for generic observability contracts and Telegram helpers.
- * In production this file loads Base/back/bootstrap.php and calls
- * base_bootstrap_load_core(). For packaged smoke tests and older Base checkouts
- * it falls back to requiring the concrete Base classes used by Boot.
+ * @file back/bootstrap.php
+ * @brief Bootstrap PHP del módulo Boot y carga compatible de Base.
  */
 
-if (!function_exists('boot_module_root')) {
-    function boot_module_root(): string
-    {
-        return dirname(__DIR__);
-    }
-}
+require_once __DIR__ . '/support/base-resolver.php';
 
-if (!function_exists('boot_bootstrap_base_candidates')) {
-    function boot_bootstrap_base_candidates(): array
-    {
-        $root = boot_module_root();
-        $candidates = [];
-
-        $env = getenv('BASE_DIR');
-        if (is_string($env) && $env !== '') {
-            $candidates[] = rtrim($env, '/');
-        }
-
-        $candidates[] = dirname($root) . '/Base';
-        $candidates[] = dirname(__DIR__, 2) . '/Base';
-        $candidates[] = '/opt/base';
-
-        return array_values(array_unique($candidates));
-    }
-}
-
-if (!function_exists('boot_resolve_base_dir')) {
-    function boot_resolve_base_dir(): ?string
-    {
-        foreach (boot_bootstrap_base_candidates() as $candidate) {
-            if (is_dir($candidate . '/back') || is_dir($candidate . '/lib/shell')) {
-                return $candidate;
-            }
-        }
-
-        return null;
-    }
-}
-
-if (!function_exists('boot_require_once_if_file')) {
-    function boot_require_once_if_file(string $file): bool
-    {
-        if (is_file($file)) {
-            require_once $file;
-            return true;
-        }
-
-        return false;
-    }
-}
-
-$__bootBaseDir = boot_resolve_base_dir();
-if ($__bootBaseDir !== null) {
-    $baseBootstrap = $__bootBaseDir . '/back/bootstrap.php';
-    if (is_file($baseBootstrap)) {
-        require_once $baseBootstrap;
-        if (function_exists('base_bootstrap_load_core')) {
-            base_bootstrap_load_core();
-        }
-    }
-
-    $baseFiles = [
-        '/back/metrics/MetricSeverity.php',
-        '/back/metrics/MetricStatus.php',
-        '/back/metrics/MetricSnapshot.php',
-        '/back/metrics/MetricSnapshotReader.php',
-        '/back/metrics/MetricSnapshotNormalizer.php',
-        '/back/metrics/JsonMetricSnapshotRepository.php',
-        '/back/telegram/TelegramHtml.php',
-        '/back/telegram/TelegramResponse.php',
-        '/back/telegram/TelegramResponseParser.php',
-    ];
-
-    foreach ($baseFiles as $relativeFile) {
-        boot_require_once_if_file($__bootBaseDir . $relativeFile);
-    }
-}
-
-$bootFiles = [
-    '/support/contracts.php',
-    '/support/paths.php',
-    '/support/config.php',
-    '/metrics/BootMetricSummary.php',
-    '/metrics/BootReportNormalizer.php',
-    '/metrics/BootReportReader.php',
-    '/metrics/BootHistoryService.php',
-    '/metrics/BootStatusService.php',
-    '/telegram/BootTelegramFormatter.php',
-];
-
-foreach ($bootFiles as $relativeFile) {
-    require_once __DIR__ . $relativeFile;
-}
+boot_bootstrap_load_base();
+boot_bootstrap_load_boot();
 
 if (!function_exists('boot_bootstrap')) {
     function boot_bootstrap(): void

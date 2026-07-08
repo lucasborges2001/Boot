@@ -1,6 +1,19 @@
 <?php
 
 declare(strict_types=1);
-require_once __DIR__ . '/../../back/bootstrap.php';
-header('Content-Type: application/json; charset=utf-8');
-echo json_encode((new BootStatusService())->health(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+
+/**
+ * @file public_html/api/health.php
+ * @brief Expone el estado read-only del último snapshot Boot con contrato JSON estable.
+ */
+
+require_once __DIR__ . '/_common.php';
+
+boot_api_require_get();
+
+try {
+    $health = (new BootStatusService())->health();
+    boot_api_ok('boot.health.ok', ['health' => $health]);
+} catch (Throwable $throwable) {
+    boot_api_error('boot.health.error', $throwable->getMessage(), 500);
+}

@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+/**
+ * @file back/telegram/BootTelegramFormatter.php
+ * @brief Formatea snapshots Boot como HTML seguro para envío Telegram vía Base.
+ */
+
 final class BootTelegramFormatter
 {
     public function formatHtml(array $report): string

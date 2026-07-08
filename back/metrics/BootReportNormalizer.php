@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+/**
+ * @file back/metrics/BootReportNormalizer.php
+ * @brief Normaliza report.json de Boot al contrato de métricas Base y al contrato API Boot.
+ */
+
 final class BootReportNormalizer implements MetricSnapshotNormalizer
 {
     public function normalize(array $raw): MetricSnapshot

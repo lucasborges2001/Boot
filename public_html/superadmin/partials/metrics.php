@@ -1,4 +1,16 @@
-<?php $m = $bootLatest['metrics'] ?? []; $u = $bootLatest['updates'] ?? []; $s = $bootLatest['services'] ?? []; ?>
+<?php
+
+declare(strict_types=1);
+
+/**
+ * @file public_html/superadmin/partials/metrics.php
+ * @brief Renderiza métricas principales de recursos, updates y servicios fallidos de Boot.
+ */
+
+$m = $bootLatest['metrics'] ?? [];
+$u = $bootLatest['updates'] ?? [];
+$s = $bootLatest['services'] ?? [];
+?>
 <section class="card"><h2>Métricas</h2><div class="metrics">
   <div><span>Load 1m</span><strong><?php echo boot_superadmin_e($m['cpu_load_1m'] ?? 'n/a'); ?></strong></div>
   <div><span>Load 5m</span><strong><?php echo boot_superadmin_e($m['cpu_load_5m'] ?? 'n/a'); ?></strong></div>

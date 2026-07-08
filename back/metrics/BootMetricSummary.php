@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+/**
+ * @file back/metrics/BootMetricSummary.php
+ * @brief DTO mínimo para resumir snapshots Boot normalizados.
+ */
+
 final class BootMetricSummary
 {
     private $hostname;
