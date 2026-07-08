@@ -63,3 +63,15 @@ No agregar en esta pantalla:
 - edición de `.env`;
 - envío manual de Telegram;
 - escritura directa en `/var/lib/boot-report`.
+
+
+## Hardening post P0/P1
+
+La pantalla usa `public_html/superadmin/_pageBootstrap.php` como frontera de composición de view model. Esa frontera consume soportes específicos:
+
+- `support/config.php`: view model de configuración sin secretos.
+- `support/paths.php`: paths y existencia de artefactos read-only.
+- `support/health.php`: estado normalizado.
+- `support/metrics.php`: summary/latest/history.
+
+Los endpoints SuperAdmin se mantienen read-only y exigen método `GET` de forma explícita para que el auditor pueda detectar el guard de método en cada archivo.

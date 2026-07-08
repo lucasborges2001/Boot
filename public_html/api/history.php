@@ -9,11 +9,12 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_common.php';
 
-boot_api_require_get();
+$bootApiMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+boot_api_require_method('GET', $bootApiMethod);
 
 try {
     $limit = boot_api_limit_from_query(10, 1, 50);
-    boot_api_ok('boot.history.ok', ['items' => (new BootHistoryService())->recent($limit)]);
+    boot_api_send_ok(['items' => (new BootHistoryService())->recent($limit)], 'OK');
 } catch (Throwable $throwable) {
-    boot_api_error('boot.history.error', $throwable->getMessage(), 500);
+    boot_api_send_error('INTERNAL_ERROR', $throwable->getMessage(), 500);
 }

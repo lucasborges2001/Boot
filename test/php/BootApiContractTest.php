@@ -18,31 +18,39 @@ function boot_api_contract_run_endpoint(string $path, string $method = 'GET'): a
     require $path;
     $json = ob_get_clean();
     $payload = json_decode((string)$json, true);
+
     assert(is_array($payload), 'Endpoint did not return JSON object: ' . $path);
     assert(array_key_exists('ok', $payload));
     assert(($payload['module'] ?? null) === 'boot');
     assert(isset($payload['code']) && is_string($payload['code']));
+
+    if (($payload['ok'] ?? null) === true) {
+        assert(isset($payload['data']) && is_array($payload['data']));
+    } else {
+        assert(isset($payload['error']['message']) && is_string($payload['error']['message']));
+    }
+
     return $payload;
 }
 
 $health = boot_api_contract_run_endpoint($root . '/public_html/api/health.php');
 assert($health['ok'] === true);
-assert($health['code'] === 'boot.health.ok');
+assert($health['code'] === 'OK');
 assert(isset($health['data']['health']));
 
 $latest = boot_api_contract_run_endpoint($root . '/public_html/api/latest.php');
 assert($latest['ok'] === true);
-assert($latest['code'] === 'boot.latest.ok');
+assert($latest['code'] === 'OK');
 assert(isset($latest['data']['latest']));
 
 $history = boot_api_contract_run_endpoint($root . '/public_html/api/history.php');
 assert($history['ok'] === true);
-assert($history['code'] === 'boot.history.ok');
+assert($history['code'] === 'OK');
 assert(isset($history['data']['items']) && is_array($history['data']['items']));
 
 $probe = boot_api_contract_run_endpoint($root . '/public_html/superadmin/api/probe.php');
 assert($probe['ok'] === true);
-assert($probe['code'] === 'boot.probe.ok');
+assert($probe['code'] === 'OK');
 
 $cmd = PHP_BINARY . ' -r ' . escapeshellarg('$_SERVER["REQUEST_METHOD"]="POST"; require ' . var_export($root . '/public_html/api/health.php', true) . ';');
 $output = [];
@@ -52,6 +60,7 @@ $methodPayload = json_decode(implode("\n", $output), true);
 assert(is_array($methodPayload));
 assert($methodPayload['ok'] === false);
 assert($methodPayload['module'] === 'boot');
-assert($methodPayload['code'] === 'boot.http.method_not_allowed');
+assert($methodPayload['code'] === 'METHOD_NOT_ALLOWED');
+assert($methodPayload['error']['message'] === 'Method not allowed. Use GET.');
 
 echo "BootApiContractTest OK\n";

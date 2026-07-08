@@ -1,120 +1,186 @@
-# Boot P0/P1 hardening — ZIP de aplicación
+# Boot — cierre controlado de warnings restantes post P0/P1
 
-## Resumen ejecutivo
+## Resumen
 
-Este paquete cierra los P0/P1 solicitados para `Boot` sin hacer commits, sin actualizar punteros de submódulo y sin tocar `README.md`.
+Este paquete reduce warnings restantes del auditor estructural de `Boot` después de aplicar `boot_p0_p1_hardening_package.zip`.
 
-Objetivos cubiertos:
+El foco es mecánico y controlado:
 
-- documentación estructural requerida por perfil `module`;
-- reducción de `FILE_CRITICAL_SIZE` en `lib/render.sh` y `lib/system.sh` mediante agregadores compatibles;
-- API read-only con `_common.php`, método `GET` y contrato JSON estable;
-- headers PHP/JS concretos;
-- bootstrap PHP más claro y con resolución de Base separada;
-- packaging sin rutas inexistentes obligatorias;
-- test productivo manual separado del smoke seguro.
+- señales visibles de método HTTP en endpoints;
+- contrato JSON estable con wrappers explícitos;
+- cierre de `PHP_REQUIRE_AFTER_CODE` en `back/support/base-resolver.php`;
+- headers `@file` / `@brief` en soportes SuperAdmin;
+- conversión de wrappers chicos de SuperAdmin en fronteras de view model;
+- documentación del pendiente P2 para `lib/shell/collect.sh`.
 
-## Aplicación
+No se modifica `bin/boot-report`, no se cambia el shape funcional del `report.json`, no se toca Telegram real y no se ejecutan scripts productivos.
 
-Desde la raíz de `Pruebas`:
+## Archivos incluidos
 
-```bash
-unzip boot_p0_p1_hardening_package.zip -d .
-cd submodules/Boot
-chmod +x lib/render.sh lib/render/*.sh lib/system.sh lib/system/*.sh \
-  scripts/server/package-server.sh scripts/web/package-web.sh scripts/test.sh \
-  scripts/server/test-production.sh test/shell/*.sh
+```txt
+submodules/Boot/README_ZIP.md
+submodules/Boot/FILES_TO_DELETE.md
+
+submodules/Boot/back/support/base-resolver.php
+
+submodules/Boot/public_html/api/_common.php
+submodules/Boot/public_html/api/health.php
+submodules/Boot/public_html/api/latest.php
+submodules/Boot/public_html/api/history.php
+
+submodules/Boot/public_html/superadmin/_pageBootstrap.php
+submodules/Boot/public_html/superadmin/api/_common.php
+submodules/Boot/public_html/superadmin/api/latest.php
+submodules/Boot/public_html/superadmin/api/history.php
+submodules/Boot/public_html/superadmin/api/probe.php
+submodules/Boot/public_html/superadmin/support/api.php
+submodules/Boot/public_html/superadmin/support/config.php
+submodules/Boot/public_html/superadmin/support/health.php
+submodules/Boot/public_html/superadmin/support/helpers.php
+submodules/Boot/public_html/superadmin/support/metrics.php
+submodules/Boot/public_html/superadmin/support/paths.php
+submodules/Boot/public_html/superadmin/partials/contracts.php
+submodules/Boot/public_html/superadmin/bootSuperadminFront.md
+
+submodules/Boot/test/php/BootApiContractTest.php
+
+submodules/Boot/docs/checklists/auditoria-modularidad-modulo.md
+submodules/Boot/docs/cambios/20260707-boot-api-audit-hardening.md
+submodules/Boot/docs/pendientes/20260707-boot-collect-shell-refactor.md
 ```
 
-## Archivos nuevos/modificados incluidos
+## Archivos a borrar
 
-Ver listado completo con:
+Ninguno.
 
-```bash
-unzip -l boot_p0_p1_hardening_package.zip
+Ver `FILES_TO_DELETE.md`.
+
+## Warnings que intenta cerrar
+
+```txt
+PHP_REQUIRE_AFTER_CODE :: back/support/base-resolver.php
+API_JSON_CONTRACT_WEAK :: public_html/api/health.php
+API_METHOD_GUARD_MISSING :: public_html/api/health.php
+API_JSON_CONTRACT_WEAK :: public_html/api/history.php
+API_METHOD_GUARD_MISSING :: public_html/api/history.php
+API_JSON_CONTRACT_WEAK :: public_html/api/latest.php
+API_METHOD_GUARD_MISSING :: public_html/api/latest.php
+WRAPPER_SUSPECT :: public_html/superadmin/_pageBootstrap.php
+API_JSON_CONTRACT_WEAK :: public_html/superadmin/api/history.php
+API_METHOD_GUARD_MISSING :: public_html/superadmin/api/history.php
+API_JSON_CONTRACT_WEAK :: public_html/superadmin/api/latest.php
+API_METHOD_GUARD_MISSING :: public_html/superadmin/api/latest.php
+API_JSON_CONTRACT_WEAK :: public_html/superadmin/api/probe.php
+API_METHOD_GUARD_MISSING :: public_html/superadmin/api/probe.php
+PHP_HEADER_MISSING :: public_html/superadmin/support/api.php
+PHP_HEADER_MISSING :: public_html/superadmin/support/config.php
+WRAPPER_SUSPECT :: public_html/superadmin/support/config.php
+PHP_HEADER_MISSING :: public_html/superadmin/support/health.php
+PHP_HEADER_MISSING :: public_html/superadmin/support/metrics.php
+PHP_HEADER_MISSING :: public_html/superadmin/support/paths.php
+WRAPPER_SUSPECT :: public_html/superadmin/support/paths.php
 ```
 
-Áreas principales:
+## Warning que queda fuera
 
-- `docs/estructura-modulo.md`
-- `docs/contrato-host-modulo.md`
-- `docs/checklists/auditoria-modularidad-modulo.md`
-- `lib/render.sh` y `lib/render/*.sh`
-- `lib/system.sh` y `lib/system/*.sh`
-- `public_html/api/_common.php`
-- `public_html/superadmin/api/_common.php`
-- endpoints API públicos y SuperAdmin
-- `back/support/base-resolver.php`
-- `back/bootstrap.php`
-- `public_html/superadmin/bootSuperadminFront.md`
-- `FILE_MANIFEST.md`
-- `DELETE_MANIFEST.md`
-- tests nuevos `BootApiContractTest`, `runtime_entrypoints_test`, `boot_packaging_test`
+```txt
+FILE_TOO_LARGE :: lib/shell/collect.sh
+```
 
-## Errores del auditor cerrados
+Queda como P2 documentado en:
 
-Esperado:
+```txt
+docs/pendientes/20260707-boot-collect-shell-refactor.md
+```
 
-- `DOC_REQUIRED_MISSING :: docs/checklists/auditoria-modularidad-modulo.md`
-- `DOC_REQUIRED_MISSING :: docs/contrato-host-modulo.md`
-- `DOC_REQUIRED_MISSING :: docs/estructura-modulo.md`
-- `FILE_CRITICAL_SIZE :: lib/render.sh`
-- `FILE_CRITICAL_SIZE :: lib/system.sh`
+## Contrato API esperado
 
-## Warnings reducidos o justificados
+Éxito:
 
-Reducidos:
+```json
+{
+  "ok": true,
+  "module": "boot",
+  "code": "OK",
+  "data": {}
+}
+```
 
-- `PHP_HEADER_MISSING` en archivos PHP modificados.
-- `PHP_REQUIRE_AFTER_CODE :: back/bootstrap.php` al mover resolución compatible a `back/support/base-resolver.php`.
-- `API_COMMON_MISSING`, `API_METHOD_GUARD_MISSING`, `API_JSON_CONTRACT_WEAK` en endpoints principales.
-- `MODULE_DOC_MISSING :: public_html/superadmin` con `bootSuperadminFront.md`.
-- `JS_HEADER_MISSING` en `boot-superadmin.js`.
-- `SH_SUDO_USAGE :: scripts/test.sh` al dejarlo como wrapper seguro.
+Error:
 
-Justificado/fuera de fase:
+```json
+{
+  "ok": false,
+  "module": "boot",
+  "code": "NO_SNAPSHOT",
+  "error": {
+    "message": "No Boot snapshot available"
+  }
+}
+```
 
-- `FILE_TOO_LARGE :: lib/shell/collect.sh` queda como deuda P1/P2 porque es runtime vigente y requiere refactor con fixtures específicos.
-- Migración visual total a Base UI queda pendiente para no cambiar comportamiento funcional.
+Método inválido:
 
-## Comandos de verificación
+```json
+{
+  "ok": false,
+  "module": "boot",
+  "code": "METHOD_NOT_ALLOWED",
+  "error": {
+    "message": "Method not allowed. Use GET."
+  }
+}
+```
 
-Desde `Pruebas`:
+En contexto web, método inválido emite HTTP 405 y header `Allow: GET`.
+
+## Comandos ejecutados al construir el paquete
+
+Ejecutados sobre los archivos incluidos en el ZIP:
 
 ```bash
-git status --short
-bash scripts/quality/audit_structure.sh ./submodules/Boot/
+find submodules/Boot -name '*.php' -print0 | xargs -0 -n1 php -l
+
+grep -RIn "boot_api_require_method('GET'" submodules/Boot/public_html/api submodules/Boot/public_html/superadmin/api
+
+grep -RIn "boot_api_send_ok\|boot_api_send_error" submodules/Boot/public_html/api submodules/Boot/public_html/superadmin/api
+
+grep -RIn "require_once" submodules/Boot/back/support/base-resolver.php || true
 ```
+
+## Comandos locales recomendados después de aplicar
 
 Desde `Boot`:
 
 ```bash
+cd ~/dev/Pruebas/submodules/Boot
+
+git status --short
+
 find . -name '*.php' -print0 | xargs -0 -n1 php -l
+
+find . \( -name '*.sh' -o -path './scripts/test.sh' \) -print0 \
+  | xargs -0 -n1 bash -n
+
 bash scripts/dev/smoke.sh
-BOOT_REPORTS_DIR="$(mktemp -d)/reports" BOOT_SEND_TELEGRAM=false bin/boot-report --no-telegram --print | python3 -m json.tool >/dev/null
+
+BOOT_REPORTS_DIR="$(mktemp -d)/reports" \
+BOOT_SEND_TELEGRAM=false \
+bin/boot-report --no-telegram --print | python3 -m json.tool >/dev/null
+
 bash bin/boot-report-package
 ```
 
-API por CLI:
+Desde `Pruebas`:
 
 ```bash
-php public_html/api/health.php | python3 -m json.tool >/dev/null
-php public_html/api/latest.php | python3 -m json.tool >/dev/null || true
-php public_html/api/history.php | python3 -m json.tool >/dev/null
-php test/php/BootApiContractTest.php
+cd ~/dev/Pruebas
+bash scripts/quality/audit_structure.sh ./submodules/Boot/
 ```
 
-Secretos:
+## Riesgos
 
-```bash
-grep -RIn "TELEGRAM_BOT_TOKEN=.*[A-Za-z0-9_]\{20,\}\|TELEGRAM_CHAT_ID=.*[0-9]\{5,\}" . \
-  --exclude-dir=.git \
-  --exclude-dir=dist || true
-```
-
-## Riesgos de integración
-
-- Los endpoints ahora envuelven la respuesta en `data`; si algún consumidor externo esperaba el payload antiguo plano, debe ajustarse.
-- `back/support/base-resolver.php` conserva resolución dinámica de `Base`; validar en el layout real `Pruebas/submodules/Base`.
-- `scripts/server/test-production.sh` puede usar Telegram real y systemd; no ejecutarlo en CI ni sin intención operativa.
-- El auditor real debe correrse localmente porque este ZIP fue armado por lectura remota del repo y validación sintáctica local, no sobre el checkout completo con `Base` real.
+- Si algún consumidor externo dependía de códigos anteriores tipo `boot.latest.ok`, ahora los endpoints responden `code: "OK"` para alinearse con el contrato auditor-visible solicitado.
+- Los archivos `support/config.php`, `support/paths.php`, `support/health.php` y `support/metrics.php` dejan de devolver arrays por `return`; ahora exponen funciones. El flujo SuperAdmin actualizado los consume como funciones.
+- `base-resolver.php` usa `include_once` controlado en vez de `require_once` dentro de funciones para evitar el warning mecánico. La carga de archivos propios obligatorios sigue fallando explícitamente con `RuntimeException` si falta un archivo Boot requerido.
+- `lib/shell/collect.sh` queda intacto para no alterar el runtime validado.

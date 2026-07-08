@@ -67,3 +67,14 @@
 - [ ] Refactor fino de `lib/shell/collect.sh` si el auditor sigue marcando `FILE_TOO_LARGE` P1/P2.
 - [ ] Migración visual completa de SuperAdmin a componentes Base si se decide homogeneizar UI.
 - [ ] CI host que ejecute packaging y API con servidor HTTP real.
+
+## P1 — Hardening post auditor
+
+- [x] Endpoints públicos contienen llamada explícita a `boot_api_require_method('GET', ...)`.
+- [x] Endpoints SuperAdmin contienen llamada explícita a `boot_api_require_method('GET', ...)`.
+- [x] Endpoints responden con wrappers `boot_api_send_ok` / `boot_api_send_error`.
+- [x] Error de método usa `METHOD_NOT_ALLOWED`, HTTP 405 y `Allow: GET`.
+- [x] `back/support/base-resolver.php` no usa `require_once` después de código.
+- [x] Soportes SuperAdmin tienen headers `@file` / `@brief`.
+- [x] Soportes SuperAdmin pasan de wrappers de `return` a view models concretos.
+- [x] `lib/shell/collect.sh` queda documentado como P2 separado.

@@ -9,10 +9,11 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_common.php';
 
-boot_api_require_get();
+$bootApiMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+boot_api_require_method('GET', $bootApiMethod);
 
 try {
-    boot_api_ok('boot.probe.ok', ['health' => (new BootStatusService())->health()]);
+    boot_api_send_ok(['health' => (new BootStatusService())->health()], 'OK');
 } catch (Throwable $throwable) {
-    boot_api_error('boot.probe.error', $throwable->getMessage(), 500);
+    boot_api_send_error('INTERNAL_ERROR', $throwable->getMessage(), 500);
 }

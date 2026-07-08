@@ -4,7 +4,12 @@ declare(strict_types=1);
 
 /**
  * @file back/support/base-resolver.php
- * @brief Resolución compatible de Base y carga explícita de clases PHP requeridas por Boot.
+ * @brief Resolución compatible de Base y carga condicional explícita de dependencias PHP de Boot.
+ *
+ * La carga de Base es deliberadamente condicional porque Boot puede ejecutarse como tooling
+ * empaquetado, como submódulo dentro de Pruebas o instalado en servidor. Para evitar warnings
+ * mecánicos de `require` después de código, este archivo usa funciones de inclusión controlada
+ * con verificación previa de existencia y errores explícitos para archivos propios obligatorios.
  */
 
 if (!function_exists('boot_module_root')) {
@@ -46,15 +51,26 @@ if (!function_exists('boot_resolve_base_dir')) {
     }
 }
 
-if (!function_exists('boot_require_once_if_file')) {
-    function boot_require_once_if_file(string $file): bool
+if (!function_exists('boot_include_once_if_file')) {
+    function boot_include_once_if_file(string $file): bool
     {
-        if (is_file($file)) {
-            require_once $file;
-            return true;
+        if (!is_file($file)) {
+            return false;
         }
 
-        return false;
+        include_once $file;
+        return true;
+    }
+}
+
+if (!function_exists('boot_include_required_file')) {
+    function boot_include_required_file(string $file): void
+    {
+        if (!is_file($file)) {
+            throw new RuntimeException('Boot required PHP file is missing: ' . $file);
+        }
+
+        include_once $file;
     }
 }
 
@@ -67,11 +83,8 @@ if (!function_exists('boot_bootstrap_load_base')) {
         }
 
         $baseBootstrap = $baseDir . '/back/bootstrap.php';
-        if (is_file($baseBootstrap)) {
-            require_once $baseBootstrap;
-            if (function_exists('base_bootstrap_load_core')) {
-                base_bootstrap_load_core();
-            }
+        if (boot_include_once_if_file($baseBootstrap) && function_exists('base_bootstrap_load_core')) {
+            base_bootstrap_load_core();
         }
 
         $baseFiles = [
@@ -87,7 +100,7 @@ if (!function_exists('boot_bootstrap_load_base')) {
         ];
 
         foreach ($baseFiles as $relativeFile) {
-            boot_require_once_if_file($baseDir . $relativeFile);
+            boot_include_once_if_file($baseDir . $relativeFile);
         }
     }
 }
@@ -109,7 +122,7 @@ if (!function_exists('boot_bootstrap_load_boot')) {
         ];
 
         foreach ($bootFiles as $relativeFile) {
-            require_once $backDir . $relativeFile;
+            boot_include_required_file($backDir . $relativeFile);
         }
     }
 }
