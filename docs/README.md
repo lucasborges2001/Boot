@@ -1,55 +1,68 @@
 # Documentación de Boot
 
-Este directorio concentra la documentación operativa del submódulo `Boot`.
+`Boot` es un submódulo de tooling opcional para bootstrap y observabilidad de servidor. Su objetivo es generar snapshots read-only del host, persistirlos como artefactos locales, exponerlos por API/UI y enviar opcionalmente un resumen por Telegram.
 
-`Boot` debe entenderse como un módulo de observabilidad/bootstrap de servidor, no como módulo runtime de aplicación. Su responsabilidad principal es generar snapshots read-only del host, persistirlos como artefactos locales, exponerlos por API/UI y enviar opcionalmente un resumen por Telegram usando primitivas de `Base`.
+## Estado actual auditado
 
-## Estado auditado
+Última validación reportada desde el checkout real:
+
+```txt
+Structure audit v1.2.0
+Root: /home/Lucas/dev/Pruebas/submodules/Boot
+Profile: module
+Summary: 0 error(s), 1 warning(s), 0 info
+```
+
+Única advertencia viva:
+
+```txt
+FILE_TOO_LARGE :: lib/shell/collect.sh
+```
+
+Validaciones funcionales reportadas como OK:
+
+```bash
+find . -name '*.php' -print0 | xargs -0 -n1 php -l
+find . \( -name '*.sh' -o -path './scripts/test.sh' \) -print0 | xargs -0 -n1 bash -n
+bash scripts/dev/smoke.sh
+BOOT_REPORTS_DIR="$(mktemp -d)/reports" BOOT_SEND_TELEGRAM=false bin/boot-report --no-telegram --print | python3 -m json.tool >/dev/null
+bash bin/boot-report-package
+```
+
+## Estado por área
 
 | Área | Estado | Nota |
 |---|---|---|
-| CLI `bin/boot-report` | Operable | Genera JSON, persiste `report.json`/`summary.txt` y puede imprimir por stdout. |
-| Dependencia `Base` | Explícita | Bash y PHP resuelven `Base` por `BASE_DIR`, layout local o `/opt/base`. |
-| Reportes | Operables | Ruta por defecto: `/var/lib/boot-report/reports/latest/report.json`. |
-| Telegram | Opcional | Se controla con `BOOT_SEND_TELEGRAM`; secretos no deben versionarse. |
-| API pública | Operable read-only | `health.php`, `latest.php`, `history.php`. |
-| SuperAdmin | Operable read-only | Pantalla propia modularizada en partials; no ejecuta comandos del sistema. |
-| Tests/smoke | Parcialmente cubiertos | Existe smoke dev, tests shell/PHP y test CLI disposable. |
-| Packaging | Requiere corrección | Scripts de paquete referencian manifests que no fueron verificados en el repo. |
+| Estructura documental requerida | Cerrada | Existen `estructura-modulo.md`, `contrato-host-modulo.md` y checklist modular. |
+| Runtime CLI | Operable | `bin/boot-report` genera JSON válido sin Telegram real. |
+| Dependencia `Base` | Operable | Resolución movida a frontera dedicada. |
+| API pública | Operable read-only | Endpoints GET con contrato JSON visible. |
+| SuperAdmin API | Operable read-only | Endpoints GET con contrato JSON visible. |
+| Packaging | Operable | `boot-server.tar.gz` y `boot-web.tar.gz` se generan. |
+| Smokes | Operables | `scripts/dev/smoke.sh` pasa completo. |
+| Auditor estructural | Casi limpio | Queda solo `lib/shell/collect.sh` grande. |
+| Producción real | Pendiente | Falta validación controlada con systemd/Telegram real o Telegram deshabilitado explícitamente. |
 
 ## Carpetas
 
 | Carpeta | Uso |
 |---|---|
-| [`operacion/`](operacion/) | Arquitectura, instalación, API/UI, validación y operación diaria. |
-| [`contratos/`](contratos/) | Contratos con Base, schema `report.json`, empaquetado y límites. |
-| [`auditorias/`](auditorias/) | Informe de auditoría generado desde el estado actual. |
-| [`cambios/`](cambios/) | Cierres documentales aplicados por este paquete. |
-| [`pendientes/`](pendientes/) | Backlog vivo priorizado para dejar Boot más sólido. |
+| [`operacion/`](operacion/) | Arquitectura, instalación, API/UI, testing y operación diaria. |
+| [`contratos/`](contratos/) | Contratos de Base, JSON, API read-only y packaging. |
+| [`auditorias/`](auditorias/) | Auditorías de estado y cierre P0/P1. |
+| [`cambios/`](cambios/) | Cambios documentales y técnicos ya cerrados. |
+| [`pendientes/`](pendientes/) | Backlog vivo priorizado. |
+| [`checklists/`](checklists/) | Checklist requerido por auditor estructural. |
 
 ## Lectura recomendada
 
-1. [`operacion/arquitectura.md`](operacion/arquitectura.md)
-2. [`contratos/base-observabilidad.md`](contratos/base-observabilidad.md)
-3. [`contratos/report-json-v1.md`](contratos/report-json-v1.md)
-4. [`operacion/instalacion-systemd.md`](operacion/instalacion-systemd.md)
-5. [`operacion/superadmin-api.md`](operacion/superadmin-api.md)
-6. [`operacion/testing.md`](operacion/testing.md)
-7. [`pendientes/README.md`](pendientes/README.md)
+1. [`estructura-modulo.md`](estructura-modulo.md)
+2. [`contrato-host-modulo.md`](contrato-host-modulo.md)
+3. [`contratos/api-json-readonly.md`](contratos/api-json-readonly.md)
+4. [`operacion/testing.md`](operacion/testing.md)
+5. [`auditorias/20260707-1900-boot-cierre-p0-p1.md`](auditorias/20260707-1900-boot-cierre-p0-p1.md)
+6. [`pendientes/README.md`](pendientes/README.md)
 
 ## Regla de operación
 
-Boot puede observar y reportar estado del servidor. No debe convertirse en orquestador de acciones destructivas, panel de ejecución remota ni módulo runtime obligatorio del host `Pruebas`.
-
-## Comandos base
-
-```bash
-cd submodules/Boot
-chmod +x bin/* scripts/server/*.sh scripts/web/*.sh scripts/dev/*.sh test/shell/*.sh
-bash scripts/dev/smoke.sh
-BOOT_REPORTS_DIR=/tmp/boot-report/reports BOOT_SEND_TELEGRAM=false bin/boot-report --no-telegram --print
-```
-
-## Regla documental
-
-Esta carpeta reemplaza documentación previa de `Boot/docs`. Si existían documentos históricos no incluidos acá, deben reubicarse manualmente solo si siguen vigentes y no contradicen el estado auditado.
+Boot puede observar, persistir y publicar estado read-only del servidor. No debe convertirse en panel de ejecución remota, orquestador de cambios del host ni dependencia runtime obligatoria de `Pruebas`.

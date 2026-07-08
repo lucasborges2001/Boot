@@ -1,65 +1,56 @@
 # Estructura del módulo Boot
 
-## Estado
+## Clasificación
 
-`Boot` es un submódulo de tooling opcional para bootstrap y observabilidad de servidor. No es un módulo runtime obligatorio del host `Pruebas`.
-
-| Campo | Valor esperado |
+| Campo | Valor |
 |---|---|
 | Tipo | `tooling-server-bootstrap` |
+| Host esperado | `Pruebas/submodules/Boot` |
 | Dependencia principal | `Base` |
-| `required_for_preflight` | `false` |
-| `include_in_app_deploy` | `false` |
-| Operación UI/API | read-only |
-| Salida principal | snapshots locales `report.json` y `summary.txt` |
+| Runtime de aplicación | No |
+| Preflight obligatorio | No |
+| Deploy app | No |
+| UI/API | Read-only |
+| Artefactos principales | `report.json`, `summary.txt`, tarballs de packaging |
 
 ## Responsabilidad
 
 Boot debe:
 
-- generar snapshots read-only del host;
-- persistir artefactos bajo `BOOT_REPORTS_DIR`, por defecto `/var/lib/boot-report/reports`;
-- mantener `latest/report.json` y `latest/summary.txt` como contrato estable;
-- exponer API y SuperAdmin read-only;
+- generar snapshots read-only del servidor;
+- persistir `latest/report.json` y `latest/summary.txt` bajo `BOOT_REPORTS_DIR`;
+- exponer estado por API pública y SuperAdmin sin ejecución de comandos remotos;
 - enviar Telegram solo si está configurado y habilitado;
-- poder verificarse con smokes sin Telegram real.
+- empaquetar instalación server/web de forma reproducible;
+- validarse con smokes sin secretos reales.
 
 Boot no debe:
 
-- ejecutar acciones destructivas desde UI/API;
-- modificar configuración del host desde endpoints web;
 - bloquear el preflight general de `Pruebas`;
-- entrar en despliegues de aplicación por defecto;
-- versionar secretos ni depender de `.env` reales para tests.
+- ejecutar acciones destructivas desde UI/API;
+- modificar configuración productiva desde endpoints web;
+- versionar tokens, chat IDs ni `.env` reales;
+- depender de Telegram para que el CLI genere JSON.
 
 ## Estructura relevante
 
 | Ruta | Responsabilidad |
 |---|---|
-| `bin/boot-report` | Entrada CLI operativa. Resuelve `Base`, genera snapshot, persiste y opcionalmente envía Telegram. |
-| `lib/shell/collect.sh` | Recolección vigente de métricas para runtime CLI. |
-| `lib/shell/render.sh` | Render vigente de resumen y Telegram para runtime CLI. |
-| `lib/shell/persist.sh` | Persistencia vigente de `report.json` y `summary.txt`. |
-| `lib/render.sh` | Agregador legacy compatible dividido en `lib/render/*.sh`. |
-| `lib/system.sh` | Agregador legacy compatible dividido en `lib/system/*.sh`. |
-| `back/` | Lectores, normalizadores y servicios PHP read-only. |
-| `public_html/api/` | API pública read-only con contrato JSON estable. |
-| `public_html/superadmin/` | Vista SuperAdmin read-only. |
-| `scripts/dev/smoke.sh` | Smoke seguro sin Telegram real. |
-| `scripts/server/test-production.sh` | Test manual productivo, fuera de smoke automático. |
-
-## Contrato de salida
-
-```txt
-/var/lib/boot-report/reports/latest/report.json
-/var/lib/boot-report/reports/latest/summary.txt
-```
-
-El path real puede cambiar con `BOOT_REPORTS_DIR`, pero la estructura relativa `latest/report.json` y `latest/summary.txt` debe conservarse.
+| `bin/boot-report` | Entrada CLI operativa. Genera snapshot, persiste artefactos y opcionalmente envía Telegram. |
+| `bin/boot-report-package` | Orquestador de paquetes server y web. |
+| `lib/shell/collect.sh` | Recolección vigente de métricas. Única deuda estructural por tamaño. |
+| `lib/shell/render.sh` | Render vigente de summary/Telegram. |
+| `lib/shell/persist.sh` | Persistencia de latest e historial. |
+| `lib/render.sh`, `lib/render/*.sh` | Compatibilidad legacy modularizada. |
+| `lib/system.sh`, `lib/system/*.sh` | Compatibilidad legacy modularizada. |
+| `back/` | Bootstrap PHP, resolución de Base, normalización y servicios read-only. |
+| `public_html/api/` | API pública read-only con contrato JSON visible. |
+| `public_html/superadmin/` | UI/API SuperAdmin read-only. |
+| `scripts/dev/smoke.sh` | Smoke seguro de desarrollo. |
+| `scripts/server/test-production.sh` | Test productivo manual, fuera de smoke automático. |
+| `test/php/`, `test/shell/` | Contratos PHP y shell. |
 
 ## Runtime vigente
-
-La ruta vigente del runtime Bash es:
 
 ```txt
 bin/boot-report
@@ -68,23 +59,33 @@ bin/boot-report
   -> lib/shell/persist.sh
 ```
 
-`lib/render.sh` y `lib/system.sh` quedan como compatibilidad legacy modularizada. No son el camino operativo principal del CLI actual.
+`lib/render.sh` y `lib/system.sh` no son el camino principal del CLI actual; quedan como agregadores chicos de compatibilidad.
 
-## Relación con Base
+## Artefactos contractuales
 
-Boot depende de `Base` para helpers shell y contratos PHP compartidos. La resolución compatible contempla:
+```txt
+reports/latest/report.json
+reports/latest/summary.txt
+```
 
-1. `BASE_DIR` explícito;
-2. `../Base` al lado del checkout Boot;
-3. layout de submódulos dentro de `Pruebas`;
-4. `/opt/base` en instalación de servidor.
+Ruta default:
+
+```txt
+/var/lib/boot-report/reports
+```
+
+Ruta configurable:
+
+```bash
+BOOT_REPORTS_DIR=/ruta/segura/reports
+```
 
 ## Criterio de operación segura
 
-Todo test automático debe correr con directorios temporales y Telegram deshabilitado:
+Todo test automático debe poder correr así:
 
 ```bash
 BOOT_REPORTS_DIR="$(mktemp -d)/reports" \
 BOOT_SEND_TELEGRAM=false \
-bin/boot-report --no-telegram --print
+bin/boot-report --no-telegram --print | python3 -m json.tool >/dev/null
 ```

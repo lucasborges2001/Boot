@@ -1,72 +1,44 @@
-# Arquitectura Boot
+# Arquitectura operativa
 
-## Rol
-
-`Boot` es un submódulo de observabilidad de servidor dependiente de `Base`.
-
-No forma parte del app deploy principal de `Pruebas`. En el manifest del host está clasificado como `tooling-server-bootstrap`, opcional, no bloqueante y sin `required_paths` de preflight.
-
-## Flujo runtime
+## Flujo principal
 
 ```txt
-systemd timer / ejecución manual
-↓
 bin/boot-report
-↓
-resolución de Base
-↓
-lib/shell/collect.sh
-↓
-lib/shell/render.sh
-↓
-lib/shell/persist.sh
-↓
-reports/latest/report.json + summary.txt
-↓
-API read-only / SuperAdmin / Telegram opcional
+  -> resuelve Base
+  -> lib/shell/collect.sh
+  -> lib/shell/render.sh
+  -> lib/shell/persist.sh
+  -> report.json / summary.txt
+  -> Telegram opcional
 ```
 
-## Componentes verificados
+## Capa PHP
 
-| Componente | Responsabilidad |
-|---|---|
-| `bin/boot-report` | Orquestador CLI. Carga Base, recolecta, renderiza, persiste y opcionalmente envía Telegram. |
-| `lib/shell/collect.sh` | Recolecta hostname, kernel, uptime, load, RAM, disco, temperatura, updates, reboot y servicios fallidos. |
-| `lib/shell/render.sh` | Genera HTML Telegram y resumen texto. |
-| `lib/shell/persist.sh` | Persiste `report.json`, `summary.txt`, snapshot histórico y poda por retención. |
-| `back/bootstrap.php` | Bootstrap PHP con fallback controlado para clases Base. |
-| `back/metrics/*` | Lectura, normalización, health, summary e historial. |
-| `public_html/api/*` | Endpoints read-only. |
-| `public_html/superadmin/*` | UI read-only para inspección. |
+```txt
+back/bootstrap.php
+back/support/base-resolver.php
+back/support/config.php
+back/support/paths.php
+back/support/contracts.php
+back/metrics/*
+```
 
-## Límites
+La capa PHP lee snapshots y los normaliza. No ejecuta recolección.
 
-Boot no debe:
+## Capa web
 
-- aplicar updates del sistema;
-- reiniciar servicios;
-- borrar reportes salvo retención configurada;
-- ejecutar scanners;
-- guardar secretos en el repo;
-- bloquear el deploy de módulos runtime;
-- duplicar helpers genéricos que pertenecen a `Base`.
+```txt
+public_html/api/*
+public_html/superadmin/*
+```
 
-## Severidad
+La capa web es read-only y se apoya en snapshots existentes.
 
-La severidad se deriva de señales simples:
+## Separación de responsabilidades
 
-| Condición | Severidad inferida |
-|---|---|
-| Disco >= 95%, RAM >= 95% o servicios fallidos | `critical` |
-| Disco >= 85%, RAM >= 85%, updates de seguridad o reboot requerido | `warning` |
-| Updates pendientes no críticos | `info` |
-| Sin señales relevantes | `ok` |
-
-## Riesgos actuales
-
-| Riesgo | Impacto | Acción sugerida |
+| Capa | Puede hacer | No debe hacer |
 |---|---|---|
-| Packaging referencia manifests no verificados | `boot-server.tar.gz` / `boot-web.tar.gz` pueden fallar. | Crear o remover `FILE_MANIFEST.md` y `DELETE_MANIFEST.md`. |
-| SuperAdmin usa CSS/UI propia | Puede quedar fuera del estándar Base visual y contractual. | Migrar a componentes Base o documentar excepción. |
-| No hay suite host TestKit declarada | El host no valida Boot como tooling de forma integrada. | Agregar suite opcional no bloqueante. |
-| Operación real con Telegram no validada acá | Puede fallar por secretos, DNS o permisos de bot. | Validación manual controlada con `BOOT_SEND_TELEGRAM=true`. |
+| CLI | Colectar, persistir, enviar Telegram opcional. | Exponer secretos o depender de web. |
+| PHP back | Leer/normalizar reportes. | Ejecutar comandos de sistema. |
+| API | Responder JSON read-only. | Mutar estado o ejecutar acciones. |
+| SuperAdmin | Mostrar estado. | Orquestar operaciones productivas. |

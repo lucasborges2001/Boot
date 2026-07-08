@@ -1,8 +1,8 @@
 # Contrato host ↔ módulo Boot
 
-## Clasificación en Pruebas
+## Clasificación esperada en `Pruebas`
 
-Boot debe registrarse en `Pruebas/config/submodules.php` como tooling opcional de servidor:
+Boot debe figurar como tooling opcional de servidor:
 
 ```php
 [
@@ -18,45 +18,25 @@ Boot debe registrarse en `Pruebas/config/submodules.php` como tooling opcional d
 
 | Punto | Contrato |
 |---|---|
-| Disponibilidad | Boot puede faltar sin romper el runtime de aplicación del host. |
-| Preflight | No debe bloquear preflight general si no está instalado/configurado. |
-| Deploy app | No entra en despliegue de aplicación por defecto. |
-| Base | Debe consumir `Base` por `BASE_DIR`, checkout vecino o `/opt/base`. |
-| UI/API | Solo lectura. No formularios destructivos ni ejecución de comandos. |
-| Telegram | Opcional, deshabilitable con `BOOT_SEND_TELEGRAM=false` o `--no-telegram`. |
-| Secretos | Nunca se versionan tokens ni chat IDs reales. |
-
-## Artefactos contractuales
-
-Boot produce:
-
-```txt
-reports/latest/report.json
-reports/latest/summary.txt
-```
-
-Ruta base por defecto:
-
-```txt
-/var/lib/boot-report/reports
-```
-
-Ruta base configurable:
-
-```bash
-BOOT_REPORTS_DIR=/ruta/segura/reports
-```
+| Disponibilidad | Boot puede faltar sin romper el runtime de aplicación. |
+| Preflight | No debe bloquear el preflight general por defecto. |
+| Deploy app | No entra en deploy de aplicación. |
+| Base | Consume `Base` por `BASE_DIR`, checkout vecino, layout de submódulos o `/opt/base`. |
+| UI/API | Solo lectura; sin formularios destructivos ni ejecución remota. |
+| Telegram | Opcional; deshabilitable con `BOOT_SEND_TELEGRAM=false` y `--no-telegram`. |
+| Secretos | No versionar tokens, chat IDs ni `.env` reales. |
+| Packaging | Debe generar paquetes reproducibles desde el checkout. |
 
 ## Endpoints read-only
 
 | Endpoint | Método | Contrato |
 |---|---:|---|
-| `public_html/api/health.php` | GET | Estado de lectura del snapshot. |
+| `public_html/api/health.php` | GET | Health read-only del snapshot. |
 | `public_html/api/latest.php` | GET | Último snapshot normalizado. |
 | `public_html/api/history.php` | GET | Historial acotado. |
 | `public_html/superadmin/api/latest.php` | GET | Último snapshot para SuperAdmin. |
 | `public_html/superadmin/api/history.php` | GET | Historial para SuperAdmin. |
-| `public_html/superadmin/api/probe.php` | GET | Probe de disponibilidad read-only. |
+| `public_html/superadmin/api/probe.php` | GET | Probe read-only de disponibilidad. |
 
 Shape estable de éxito:
 
@@ -64,7 +44,7 @@ Shape estable de éxito:
 {
   "ok": true,
   "module": "boot",
-  "code": "boot.latest.ok",
+  "code": "OK",
   "data": {}
 }
 ```
@@ -75,22 +55,20 @@ Shape estable de error:
 {
   "ok": false,
   "module": "boot",
-  "code": "boot.latest.missing",
-  "error": "No Boot snapshot available"
+  "code": "NO_SNAPSHOT",
+  "error": {
+    "message": "No Boot snapshot available"
+  }
 }
 ```
 
-Métodos no permitidos deben devolver `405` y `Allow: GET`.
+Método inválido:
 
-## Smokes seguros desde el host
+- HTTP `405`;
+- header `Allow: GET`;
+- `code: METHOD_NOT_ALLOWED`.
 
-Desde `Pruebas`:
-
-```bash
-bash scripts/quality/audit_structure.sh ./submodules/Boot/
-```
-
-Desde `Boot`:
+## Validación desde Boot
 
 ```bash
 bash scripts/dev/smoke.sh
@@ -98,14 +76,19 @@ BOOT_REPORTS_DIR="$(mktemp -d)/reports" BOOT_SEND_TELEGRAM=false bin/boot-report
 bash bin/boot-report-package
 ```
 
+## Validación desde Pruebas
+
+```bash
+bash scripts/quality/audit_structure.sh ./submodules/Boot/
+```
+
 ## Límites de integración
 
-Boot no debe asumir que todos los hosts tienen:
+Boot no debe asumir que todos los entornos tienen:
 
 - `sensors`;
-- `systemctl` operativo dentro de contenedores;
+- `systemctl` operativo;
 - salida a internet;
 - credenciales Telegram;
-- permisos sobre `/var/lib/boot-report` durante tests.
-
-Por eso los tests deben tolerar ausencia de sensores/systemd y escribir solo en temporales.
+- permisos productivos sobre `/var/lib/boot-report`;
+- `Base` instalado en `/opt/base` durante tests.
