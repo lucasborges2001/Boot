@@ -1,10 +1,10 @@
 # Contrato `report.json` v1
 
-## Archivo principal
+## Estado
 
-```txt
-reports/latest/report.json
-```
+Contrato legacy soportado para lectura y compatibilidad.
+
+Boot emite `schema_version=2` desde la extensión de telemetría host, pero `BootReportNormalizer`, `BootReportReader` y `BootHistoryService` continúan aceptando snapshots v1.
 
 ## Campos mínimos esperados
 
@@ -23,14 +23,24 @@ reports/latest/report.json
 }
 ```
 
-## Reglas
+## Reglas de compatibilidad
 
 - `module` debe ser `boot`.
-- `schema_version` debe mantenerse en `1` hasta que exista migración explícita.
 - `generated_at` es variable y debe normalizarse en comparaciones.
-- Telegram no debe ser fuente de verdad.
-- Los tests no deben requerir sensores reales ni systemd funcional.
+- Telegram no es fuente de verdad.
+- la ausencia de `cpu`, `memory`, `filesystems`, `disk_io` y `network_interfaces` se normaliza como objetos o listas vacías;
+- la API no expone rutas absolutas aunque el snapshot legacy las contenga;
+- `ip_wan` se normaliza a `null`;
+- los tests no requieren sensores reales ni systemd funcional.
 
-## Riesgo principal
+## Fixture
 
-`lib/shell/collect.sh` genera este contrato. Por eso su refactor debe comparar el JSON antes/después y no solo pasar `bash -n`.
+```txt
+var/sample-reports/v1/report.json
+```
+
+## Migración
+
+Los consumidores deben leer primero los campos v1 existentes y tratar los campos v2 como extensiones opcionales. No deben exigir que todo histórico tenga `schema_version=2`.
+
+El contrato vigente de escritura está documentado en [`report-json-v2.md`](report-json-v2.md).
