@@ -67,7 +67,9 @@ if (!function_exists('boot_config_load')) {
             'filesystem_excludelist' => boot_env_csv('BOOT_FILESYSTEM_EXCLUDELIST', ['/proc', '/sys', '/dev', '/run']),
             'network_interface_allowlist' => boot_env_csv('BOOT_NETWORK_INTERFACE_ALLOWLIST'),
             'disk_device_allowlist' => boot_env_csv('BOOT_DISK_DEVICE_ALLOWLIST'),
+            'command_timeout_seconds' => boot_env_int('BOOT_COMMAND_TIMEOUT_SECONDS', 5, 1, 300),
             'include_lan_ip' => boot_env_bool('BOOT_INCLUDE_LAN_IP', true),
+            'allow_sample_reports' => boot_env_bool('BOOT_ALLOW_SAMPLE_REPORTS', false),
             'send_telegram' => boot_env_bool('BOOT_SEND_TELEGRAM', true),
             'base_dir' => boot_resolve_base_dir(),
         ];
