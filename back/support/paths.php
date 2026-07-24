@@ -119,9 +119,24 @@ if (!function_exists('boot_history_dirs')) {
             $reportsDir = boot_sample_reports_dir();
         }
 
-        $dirs = glob($reportsDir . '/*', GLOB_ONLYDIR) ?: [];
-        $dirs = array_values(array_filter($dirs, static function (string $dir): bool {
-            return basename($dir) !== 'latest' && is_file($dir . '/report.json');
+        $reportsRoot = realpath($reportsDir);
+        if ($reportsRoot === false || !is_dir($reportsRoot)) {
+            return [];
+        }
+
+        $dirs = glob($reportsRoot . '/*', GLOB_ONLYDIR) ?: [];
+        $dirs = array_values(array_filter($dirs, static function (string $dir) use ($reportsRoot): bool {
+            if (basename($dir) === 'latest' || is_link($dir)) {
+                return false;
+            }
+
+            $resolved = realpath($dir);
+            if ($resolved === false || dirname($resolved) !== $reportsRoot) {
+                return false;
+            }
+
+            $report = $resolved . '/report.json';
+            return is_file($report) && !is_link($report);
         }));
         rsort($dirs, SORT_STRING);
 
