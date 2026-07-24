@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * @file back/metrics/BootStatusService.php
- * @brief Servicio de lectura read-only para health, latest y resumen SuperAdmin de Boot.
+ * @brief Servicio de lectura read-only para health, latest, detalles y resumen SuperAdmin de Boot.
  */
 
 final class BootStatusService
@@ -31,8 +31,8 @@ final class BootStatusService
                 'ok' => false,
                 'module' => BOOT_MODULE_NAME,
                 'severity' => 'unknown',
-                'summary' => $this->reader->lastError() ?: 'No hay snapshot Boot disponible',
-                'latest_path' => $this->reader->path(),
+                'summary' => 'No hay snapshot Boot disponible',
+                'snapshot_available' => false,
             ];
         }
 
@@ -43,8 +43,71 @@ final class BootStatusService
             'severity' => $severity,
             'summary' => (string)($latest['status']['summary'] ?? ''),
             'generated_at' => (string)($latest['generated_at'] ?? ''),
-            'latest_path' => $this->reader->path(),
+            'schema_version' => (int)($latest['schema_version'] ?? BOOT_SCHEMA_VERSION),
+            'snapshot_available' => true,
         ];
+    }
+
+    public function operationalSummary(): array
+    {
+        $latest = $this->latest();
+        if ($latest === null) {
+            return [
+                'available' => false,
+                'health' => $this->health(),
+            ];
+        }
+
+        $metrics = is_array($latest['metrics'] ?? null) ? $latest['metrics'] : [];
+        $server = is_array($latest['server'] ?? null) ? $latest['server'] : [];
+        $updates = is_array($latest['updates'] ?? null) ? $latest['updates'] : [];
+        $services = is_array($latest['services'] ?? null) ? $latest['services'] : [];
+
+        return [
+            'available' => true,
+            'generated_at' => (string)($latest['generated_at'] ?? ''),
+            'health' => $this->health(),
+            'server' => [
+                'hostname' => (string)($server['hostname'] ?? ''),
+                'uptime_seconds' => $server['uptime_seconds'] ?? null,
+                'cpu_logical' => $server['cpu_logical'] ?? null,
+            ],
+            'metrics' => [
+                'cpu_used_percent' => $metrics['cpu_used_percent'] ?? null,
+                'cpu_load_1m' => $metrics['cpu_load_1m'] ?? null,
+                'ram_used_percent' => $metrics['ram_used_percent'] ?? null,
+                'swap_used_percent' => $metrics['swap_used_percent'] ?? null,
+                'disk_root_used_percent' => $metrics['disk_root_used_percent'] ?? null,
+            ],
+            'updates' => [
+                'total' => $updates['total'] ?? null,
+                'security' => $updates['security'] ?? null,
+                'reboot_required' => $updates['reboot_required'] ?? null,
+            ],
+            'failed_services' => $services['failed_count'] ?? null,
+        ];
+    }
+
+    public function details(string $section): ?array
+    {
+        $latest = $this->latest();
+        if ($latest === null) {
+            return null;
+        }
+
+        $sections = [
+            'cpu' => is_array($latest['cpu'] ?? null) ? $latest['cpu'] : [],
+            'memory' => is_array($latest['memory'] ?? null) ? $latest['memory'] : [],
+            'filesystems' => is_array($latest['filesystems'] ?? null) ? $latest['filesystems'] : [],
+            'network' => is_array($latest['network_interfaces'] ?? null) ? $latest['network_interfaces'] : [],
+            'disk_io' => is_array($latest['disk_io'] ?? null) ? $latest['disk_io'] : [],
+        ];
+
+        return array_key_exists($section, $sections) ? [
+            'section' => $section,
+            'generated_at' => (string)($latest['generated_at'] ?? ''),
+            'data' => $sections[$section],
+        ] : null;
     }
 
     public function summary(): array
@@ -61,6 +124,7 @@ final class BootStatusService
         return [
             'available' => true,
             'health' => $this->health(),
+            'operational' => $this->operationalSummary(),
             'latest' => $latest,
             'history' => $this->history->recent(5),
         ];
