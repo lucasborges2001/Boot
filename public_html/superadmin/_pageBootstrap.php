@@ -27,6 +27,7 @@ if (!function_exists('boot_superadmin_page_view_model')) {
             'summary' => $summary,
             'latest' => boot_superadmin_latest_view_model($summary),
             'health' => boot_superadmin_health_view_model($service, $summary),
+            'trends' => boot_superadmin_trends_view_model($summary),
             'history' => boot_superadmin_history_view_model($summary),
             'paths' => $paths,
             'contract_paths' => boot_superadmin_contract_paths($paths),
@@ -41,6 +42,7 @@ $bootService = $bootViewModel['service'];
 $bootSummary = $bootViewModel['summary'];
 $bootLatest = $bootViewModel['latest'];
 $bootHealth = $bootViewModel['health'];
+$bootTrends = $bootViewModel['trends'];
 $bootHistory = $bootViewModel['history'];
 $bootPaths = $bootViewModel['paths'];
 $bootContractPaths = $bootViewModel['contract_paths'];
