@@ -40,7 +40,8 @@ final class BootHistoryService
             $items[] = $normalized;
         }
 
-        if ($items === [] && is_dir(boot_sample_reports_dir())) {
+        $sampleAllowed = boot_sample_reports_enabled() || boot_is_sample_reports_dir($this->reportsDir);
+        if ($items === [] && $sampleAllowed && is_file(boot_sample_latest_report_path())) {
             $sample = new JsonMetricSnapshotRepository(boot_sample_latest_report_path());
             $raw = $sample->read();
             if ($raw !== null && ($raw['module'] ?? null) === BOOT_MODULE_NAME) {
