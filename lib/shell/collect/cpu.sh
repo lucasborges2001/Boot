@@ -7,7 +7,12 @@ fi
 BOOT_COLLECT_CPU_SH_INCLUDED=1
 
 _boot_cpu_line() {
+  local sample_file="${1:-}"
   local proc_root="${BOOT_PROC_ROOT:-/proc}"
+  if [[ -n "$sample_file" && -r "$sample_file" ]]; then
+    awk '/^cpu[[:space:]]/ {print; exit}' "$sample_file"
+    return
+  fi
   [[ -r "$proc_root/stat" ]] || return 1
   awk '/^cpu[[:space:]]/ {print; exit}' "$proc_root/stat"
 }
@@ -36,17 +41,19 @@ _boot_cpu_logical_count() {
 boot_collect_cpu_json() {
   command -v python3 >/dev/null 2>&1 || { printf '{"available":false,"source":"unavailable"}\n'; return; }
 
-  local interval first second logical
+  local interval first second logical first_file second_file
   interval="${BOOT_CPU_SAMPLE_INTERVAL_SECONDS:-0.2}"
   if ! awk -v value="$interval" 'BEGIN { exit !(value ~ /^[0-9]+([.][0-9]+)?$/ && value >= 0 && value <= 5) }'; then
     interval="0.2"
   fi
 
-  first="$(_boot_cpu_line 2>/dev/null || true)"
-  if [[ -n "$first" && "$interval" != "0" && "$interval" != "0.0" ]]; then
+  first_file="${BOOT_CPU_SAMPLE_FIRST_FILE:-}"
+  second_file="${BOOT_CPU_SAMPLE_SECOND_FILE:-}"
+  first="$(_boot_cpu_line "$first_file" 2>/dev/null || true)"
+  if [[ -z "$second_file" && -n "$first" && "$interval" != "0" && "$interval" != "0.0" ]]; then
     sleep "$interval"
   fi
-  second="$(_boot_cpu_line 2>/dev/null || true)"
+  second="$(_boot_cpu_line "$second_file" 2>/dev/null || true)"
   logical="$(_boot_cpu_logical_count)"
 
   BOOT_CPU_FIRST="$first" BOOT_CPU_SECOND="$second" BOOT_CPU_LOGICAL="$logical" BOOT_CPU_INTERVAL="$interval" python3 - <<'PY'
