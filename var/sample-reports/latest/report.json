@@ -1,12 +1,13 @@
 {
   "module": "boot",
-  "schema_version": 1,
-  "generated_at": "2026-06-20T10:30:00-03:00",
+  "schema_version": 2,
+  "generated_at": "2026-07-24T15:00:00Z",
   "server": {
     "hostname": "server-01",
     "kernel": "6.x",
     "uptime_seconds": 123456,
-    "ip_lan": "192.168.1.10",
+    "cpu_logical": 4,
+    "ip_lan": null,
     "ip_wan": null
   },
   "status": {
@@ -15,26 +16,157 @@
     "summary": "Servidor estable"
   },
   "metrics": {
-    "cpu_load_1m": 0.21,
-    "cpu_load_5m": 0.18,
-    "cpu_load_15m": 0.16,
-    "ram_used_percent": 47.5,
-    "disk_root_used_percent": 62.1,
-    "temperature_c": 48
+    "cpu_used_percent": 31.4,
+    "cpu_load_1m": 0.61,
+    "cpu_load_5m": 0.44,
+    "cpu_load_15m": 0.32,
+    "ram_used_percent": 58.2,
+    "swap_used_percent": 4.0,
+    "disk_root_used_percent": 72.0,
+    "temperature_c": 48.0
   },
+  "cpu": {
+    "available": true,
+    "source": "procfs",
+    "logical": 4,
+    "sample_window_seconds": 0.2,
+    "used_percent": 31.4,
+    "time_percent": {
+      "user": 20.0,
+      "system": 8.0,
+      "idle": 66.6,
+      "iowait": 2.0,
+      "steal": 3.4
+    },
+    "counters_jiffies": {
+      "user": 10000,
+      "nice": 200,
+      "system": 5000,
+      "idle": 40000,
+      "iowait": 1000,
+      "irq": 100,
+      "softirq": 300,
+      "steal": 50,
+      "guest": 0,
+      "guest_nice": 0
+    }
+  },
+  "memory": {
+    "available": true,
+    "source": "procfs",
+    "total_bytes": 8589934592,
+    "available_bytes": 3590594560,
+    "used_bytes": 4999340032,
+    "used_percent": 58.2,
+    "swap_total_bytes": 2147483648,
+    "swap_used_bytes": 85899346,
+    "swap_used_percent": 4.0,
+    "pressure": {
+      "source": "procfs_psi",
+      "some": {
+        "avg10": 0.0,
+        "avg60": 0.01,
+        "avg300": 0.02,
+        "total": 1200
+      }
+    }
+  },
+  "filesystems": [
+    {
+      "mount": "/",
+      "available": true,
+      "filesystem_type": "ext4",
+      "device": "sda2",
+      "total_bytes": 107374182400,
+      "used_bytes": 77309411328,
+      "available_bytes": 30064771072,
+      "used_percent": 72.0,
+      "inodes_total": 6553600,
+      "inodes_used": 983040,
+      "inodes_available": 5570560,
+      "inodes_used_percent": 15.0
+    },
+    {
+      "mount": "/var",
+      "available": true,
+      "filesystem_type": "ext4",
+      "device": "sda3",
+      "total_bytes": 53687091200,
+      "used_bytes": 21474836480,
+      "available_bytes": 32212254720,
+      "used_percent": 40.0,
+      "inodes_total": 3276800,
+      "inodes_used": 491520,
+      "inodes_available": 2785280,
+      "inodes_used_percent": 15.0
+    }
+  ],
+  "disk_io": {
+    "available": true,
+    "source": "procfs",
+    "devices": ["sda"],
+    "read_operations": 12000,
+    "write_operations": 8000,
+    "read_bytes": 1048576000,
+    "write_bytes": 524288000,
+    "io_time_ms": 42000
+  },
+  "network_interfaces": [
+    {
+      "name": "eth0",
+      "available": true,
+      "operstate": "up",
+      "speed_mbps": 1000,
+      "mtu": 1500,
+      "counters": {
+        "rx_bytes": 500000000,
+        "tx_bytes": 250000000,
+        "rx_packets": 450000,
+        "tx_packets": 300000,
+        "rx_errors": 0,
+        "tx_errors": 0,
+        "rx_dropped": 2,
+        "tx_dropped": 0
+      },
+      "rates": {
+        "interval_seconds": 60.0,
+        "rx_bytes_per_second": 125000.0,
+        "tx_bytes_per_second": 62500.0,
+        "rx_packets_per_second": 110.0,
+        "tx_packets_per_second": 75.0,
+        "rx_errors_per_second": 0.0,
+        "tx_errors_per_second": 0.0,
+        "rx_dropped_per_second": 0.0,
+        "tx_dropped_per_second": 0.0
+      },
+      "rate_status": "ok"
+    }
+  ],
   "updates": {
-    "total": 4,
-    "security": 1,
+    "total": 0,
+    "security": 0,
     "reboot_required": false
   },
   "services": {
     "failed_count": 0,
     "failed": []
   },
+  "collection": {
+    "warnings": [],
+    "network_rates_require_previous_snapshot": true
+  },
+  "units": {
+    "percent": "0..100",
+    "bytes": "bytes",
+    "rates": "per_second",
+    "load_average": "runnable_tasks_average",
+    "temperature": "celsius",
+    "cpu_counters": "jiffies"
+  },
   "telegram": {
-    "enabled": true,
-    "last_send_ok": true,
-    "message_id": 123,
+    "enabled": false,
+    "last_send_ok": null,
+    "message_id": null,
     "description": null
   },
   "artifacts": {
