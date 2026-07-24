@@ -4,18 +4,23 @@ declare(strict_types=1);
 
 /**
  * @file back/metrics/BootStatusService.php
- * @brief Servicio de lectura read-only para health, latest, detalles y resumen SuperAdmin de Boot.
+ * @brief Servicio de lectura read-only para health, latest, detalles, tendencias y resumen SuperAdmin.
  */
 
 final class BootStatusService
 {
     private $reader;
     private $history;
+    private $trends;
 
-    public function __construct(?BootReportReader $reader = null, ?BootHistoryService $history = null)
-    {
+    public function __construct(
+        ?BootReportReader $reader = null,
+        ?BootHistoryService $history = null,
+        ?BootTrendService $trends = null
+    ) {
         $this->reader = $reader ?: new BootReportReader();
         $this->history = $history ?: new BootHistoryService();
+        $this->trends = $trends ?: new BootTrendService($this->reader, $this->history);
     }
 
     public function latest(): ?array
@@ -48,6 +53,11 @@ final class BootStatusService
         ];
     }
 
+    public function trends(int $limit = 30): array
+    {
+        return $this->trends->summary($limit);
+    }
+
     public function operationalSummary(): array
     {
         $latest = $this->latest();
@@ -55,6 +65,7 @@ final class BootStatusService
             return [
                 'available' => false,
                 'health' => $this->health(),
+                'trends' => $this->trends(),
             ];
         }
 
@@ -85,6 +96,7 @@ final class BootStatusService
                 'reboot_required' => $updates['reboot_required'] ?? null,
             ],
             'failed_services' => $services['failed_count'] ?? null,
+            'trends' => $this->trends(),
         ];
     }
 
@@ -117,6 +129,7 @@ final class BootStatusService
             return [
                 'available' => false,
                 'health' => $this->health(),
+                'trends' => $this->trends(),
                 'history' => [],
             ];
         }
@@ -125,6 +138,7 @@ final class BootStatusService
             'available' => true,
             'health' => $this->health(),
             'operational' => $this->operationalSummary(),
+            'trends' => $this->trends(),
             'latest' => $latest,
             'history' => $this->history->recent(5),
         ];
