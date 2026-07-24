@@ -6,12 +6,32 @@ if [[ -n "${BOOT_COLLECT_SYSTEM_SH_INCLUDED:-}" ]]; then
 fi
 BOOT_COLLECT_SYSTEM_SH_INCLUDED=1
 
+boot_command_timeout_seconds() {
+  local value="${BOOT_COMMAND_TIMEOUT_SECONDS:-5}"
+  if [[ ! "$value" =~ ^[0-9]+$ || "$value" -lt 1 || "$value" -gt 300 ]]; then
+    value=5
+  fi
+  printf '%s\n' "$value"
+}
+
+boot_run_with_timeout() {
+  local seconds
+  seconds="$(boot_command_timeout_seconds)"
+  if command -v timeout >/dev/null 2>&1; then
+    timeout --signal=TERM --kill-after=2 "${seconds}s" "$@"
+  else
+    "$@"
+  fi
+}
+
 boot_collect_generated_at() {
   date -u '+%Y-%m-%dT%H:%M:%SZ'
 }
 
 boot_collect_hostname() {
-  hostname -f 2>/dev/null || hostname 2>/dev/null || printf 'unknown\n'
+  boot_run_with_timeout hostname -f 2>/dev/null \
+    || boot_run_with_timeout hostname 2>/dev/null \
+    || printf 'unknown\n'
 }
 
 boot_collect_kernel() {
@@ -33,14 +53,18 @@ boot_collect_load() {
     awk '{print $1, $2, $3}' "$proc_root/loadavg"
     return
   fi
-  uptime 2>/dev/null | awk -F'load averages?: ' '{print $2}' | tr ',' ' ' | awk '{print $1, $2, $3}' || printf '0 0 0\n'
+  boot_run_with_timeout uptime 2>/dev/null \
+    | awk -F'load averages?: ' '{print $2}' \
+    | tr ',' ' ' \
+    | awk '{print $1, $2, $3}' \
+    || printf '0 0 0\n'
 }
 
 boot_collect_temperature() {
   local sys_root="${BOOT_SYS_ROOT:-/sys}"
   if command -v sensors >/dev/null 2>&1; then
     local sensor_value
-    sensor_value="$(sensors 2>/dev/null | awk '/Package id 0|Tctl|CPU/ { for (i=1;i<=NF;i++) if ($i ~ /^\+[0-9.]+°C$/) {gsub(/[+°C]/,"",$i); print $i; exit} }' | head -n1 || true)"
+    sensor_value="$(boot_run_with_timeout sensors 2>/dev/null | awk '/Package id 0|Tctl|CPU/ { for (i=1;i<=NF;i++) if ($i ~ /^\+[0-9.]+°C$/) {gsub(/[+°C]/,"",$i); print $i; exit} }' | head -n1 || true)"
     if [[ -n "$sensor_value" ]]; then
       printf '%s\n' "$sensor_value"
       return 0
@@ -61,21 +85,25 @@ boot_collect_temperature() {
 }
 
 boot_collect_updates() {
-  local total=0 security=0
+  local total=0 security=0 list=""
 
   if command -v apt-get >/dev/null 2>&1 && command -v apt >/dev/null 2>&1; then
-    local list
-    list="$(apt list --upgradable 2>/dev/null | tail -n +2 || true)"
-    total="$(printf '%s\n' "$list" | sed '/^$/d' | wc -l | tr -d ' ')"
-    security="$(printf '%s\n' "$list" | grep -Ei 'security|ubuntu-security|debian-security' | wc -l | tr -d ' ')"
+    list="$(boot_run_with_timeout apt list --upgradable 2>/dev/null | tail -n +2 || true)"
+    total="$(printf '%s\n' "$list" | awk 'NF {count++} END {print count+0}')"
+    security="$(printf '%s\n' "$list" | awk 'BEGIN {IGNORECASE=1} /security|ubuntu-security|debian-security/ {count++} END {print count+0}')"
   elif command -v dnf >/dev/null 2>&1; then
-    total="$(dnf check-update -q 2>/dev/null | awk 'NF>=3 {c++} END {print c+0}' || printf '0')"
-    security="$(dnf updateinfo list security 2>/dev/null | awk 'NF>0 {c++} END {print c+0}' || printf '0')"
+    list="$(boot_run_with_timeout dnf check-update -q 2>/dev/null || true)"
+    total="$(printf '%s\n' "$list" | awk 'NF>=3 {count++} END {print count+0}')"
+    list="$(boot_run_with_timeout dnf updateinfo list security 2>/dev/null || true)"
+    security="$(printf '%s\n' "$list" | awk 'NF>0 {count++} END {print count+0}')"
   elif command -v yum >/dev/null 2>&1; then
-    total="$(yum check-update -q 2>/dev/null | awk 'NF>=3 {c++} END {print c+0}' || printf '0')"
-    security="$(yum updateinfo list security 2>/dev/null | awk 'NF>0 {c++} END {print c+0}' || printf '0')"
+    list="$(boot_run_with_timeout yum check-update -q 2>/dev/null || true)"
+    total="$(printf '%s\n' "$list" | awk 'NF>=3 {count++} END {print count+0}')"
+    list="$(boot_run_with_timeout yum updateinfo list security 2>/dev/null || true)"
+    security="$(printf '%s\n' "$list" | awk 'NF>0 {count++} END {print count+0}')"
   elif command -v pacman >/dev/null 2>&1; then
-    total="$(pacman -Qu 2>/dev/null | wc -l | tr -d ' ')"
+    list="$(boot_run_with_timeout pacman -Qu 2>/dev/null || true)"
+    total="$(printf '%s\n' "$list" | awk 'NF {count++} END {print count+0}')"
   fi
 
   printf '%s %s\n' "${total:-0}" "${security:-0}"
@@ -94,16 +122,20 @@ boot_collect_failed_services() {
     printf '[]\n'
     return
   fi
-  systemctl --failed --no-legend --plain 2>/dev/null | awk '{print $1}' | sed '/^$/d' | python3 -c 'import json,sys; print(json.dumps([line.strip() for line in sys.stdin if line.strip()]))' 2>/dev/null || printf '[]\n'
+  boot_run_with_timeout systemctl --failed --no-legend --plain 2>/dev/null \
+    | awk '{print $1}' \
+    | sed '/^$/d' \
+    | python3 -c 'import json,sys; print(json.dumps([line.strip() for line in sys.stdin if line.strip()]))' 2>/dev/null \
+    || printf '[]\n'
 }
 
 boot_collect_network_lan() {
   local lan=""
   if command -v hostname >/dev/null 2>&1; then
-    lan="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"
+    lan="$(boot_run_with_timeout hostname -I 2>/dev/null | awk '{print $1}' || true)"
   fi
   if [[ -z "$lan" ]] && command -v ip >/dev/null 2>&1; then
-    lan="$(ip route get 1.1.1.1 2>/dev/null | awk '/src/ {for (i=1;i<=NF;i++) if ($i=="src") {print $(i+1); exit}}' || true)"
+    lan="$(boot_run_with_timeout ip route get 1.1.1.1 2>/dev/null | awk '/src/ {for (i=1;i<=NF;i++) if ($i=="src") {print $(i+1); exit}}' || true)"
   fi
   printf '%s\n' "$lan"
 }
