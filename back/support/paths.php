@@ -49,6 +49,25 @@ if (!function_exists('boot_sample_reports_dir')) {
     }
 }
 
+if (!function_exists('boot_sample_reports_enabled')) {
+    function boot_sample_reports_enabled(): bool
+    {
+        $value = getenv('BOOT_ALLOW_SAMPLE_REPORTS');
+        if ($value === false || trim((string)$value) === '') {
+            return false;
+        }
+
+        return in_array(strtolower(trim((string)$value)), ['1', 'true', 'yes', 'y', 'on', 'enabled'], true);
+    }
+}
+
+if (!function_exists('boot_is_sample_reports_dir')) {
+    function boot_is_sample_reports_dir(string $reportsDir): bool
+    {
+        return rtrim($reportsDir, '/') === rtrim(boot_sample_reports_dir(), '/');
+    }
+}
+
 if (!function_exists('boot_latest_report_path')) {
     function boot_latest_report_path(?array $config = null): string
     {
@@ -78,9 +97,11 @@ if (!function_exists('boot_effective_latest_report_path')) {
             return $configured;
         }
 
-        $sample = boot_sample_latest_report_path();
-        if (is_file($sample)) {
-            return $sample;
+        if (boot_sample_reports_enabled()) {
+            $sample = boot_sample_latest_report_path();
+            if (is_file($sample)) {
+                return $sample;
+            }
         }
 
         return $configured;
@@ -92,6 +113,9 @@ if (!function_exists('boot_history_dirs')) {
     {
         $reportsDir = boot_reports_dir($config);
         if (!is_dir($reportsDir)) {
+            if (!boot_sample_reports_enabled()) {
+                return [];
+            }
             $reportsDir = boot_sample_reports_dir();
         }
 
