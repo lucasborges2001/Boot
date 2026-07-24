@@ -22,6 +22,7 @@ require __DIR__ . '/_pageBootstrap.php';
     <?php require __DIR__ . '/partials/hero.php'; ?>
     <?php require __DIR__ . '/partials/status.php'; ?>
     <?php require __DIR__ . '/partials/metrics.php'; ?>
+    <?php require __DIR__ . '/partials/trends.php'; ?>
     <?php require __DIR__ . '/partials/telemetry-details.php'; ?>
     <?php require __DIR__ . '/partials/telegram.php'; ?>
     <?php require __DIR__ . '/partials/history.php'; ?>
