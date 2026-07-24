@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * @file back/metrics/BootHistoryService.php
- * @brief Lista snapshots históricos Boot desde reports_dir o fixtures sample.
+ * @brief Lista snapshots históricos Boot sin exponer rutas internas y omitiendo archivos inválidos.
  */
 
 final class BootHistoryService
@@ -20,6 +20,7 @@ final class BootHistoryService
 
     public function recent(int $limit = 10): array
     {
+        $limit = max(1, min(100, $limit));
         $items = [];
         $dirs = boot_history_dirs(['reports_dir' => $this->reportsDir]);
 
@@ -30,21 +31,21 @@ final class BootHistoryService
 
             $repository = new JsonMetricSnapshotRepository($dir . '/report.json');
             $raw = $repository->read();
-            if ($raw === null) {
+            if ($raw === null || ($raw['module'] ?? null) !== BOOT_MODULE_NAME) {
                 continue;
             }
 
             $normalized = $this->normalizer->normalizeForApi($raw);
-            $normalized['path'] = $dir . '/report.json';
+            $normalized['snapshot_id'] = basename($dir);
             $items[] = $normalized;
         }
 
         if ($items === [] && is_dir(boot_sample_reports_dir())) {
             $sample = new JsonMetricSnapshotRepository(boot_sample_latest_report_path());
             $raw = $sample->read();
-            if ($raw !== null) {
+            if ($raw !== null && ($raw['module'] ?? null) === BOOT_MODULE_NAME) {
                 $normalized = $this->normalizer->normalizeForApi($raw);
-                $normalized['path'] = boot_sample_latest_report_path();
+                $normalized['snapshot_id'] = 'sample';
                 $items[] = $normalized;
             }
         }
