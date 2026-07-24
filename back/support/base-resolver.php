@@ -117,6 +117,7 @@ if (!function_exists('boot_bootstrap_load_boot')) {
             '/metrics/BootReportNormalizer.php',
             '/metrics/BootReportReader.php',
             '/metrics/BootHistoryService.php',
+            '/metrics/BootTrendService.php',
             '/metrics/BootStatusService.php',
             '/telegram/BootTelegramFormatter.php',
         ];
