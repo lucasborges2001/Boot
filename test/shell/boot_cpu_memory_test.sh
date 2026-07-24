@@ -44,17 +44,20 @@ BOOT_TEST_CPU="$cpu_json" BOOT_TEST_MEMORY="$memory_json" python3 - <<'PY'
 import json, os
 cpu = json.loads(os.environ['BOOT_TEST_CPU'])
 memory = json.loads(os.environ['BOOT_TEST_MEMORY'])
-assert cpu['available'] is True
-assert cpu['logical'] == 2
-assert cpu['used_percent'] == 30.0
-assert cpu['time_percent']['user'] == 20.0
-assert cpu['time_percent']['system'] == 10.0
-assert cpu['time_percent']['idle'] == 70.0
-assert memory['available'] is True
-assert memory['total_bytes'] == 1024000
-assert memory['used_percent'] == 60.0
-assert memory['swap_used_percent'] == 25.0
-assert memory['pressure']['source'] == 'procfs_psi'
+def check(condition, message):
+    if not condition:
+        raise SystemExit(message)
+check(cpu['available'] is True, 'CPU fixture unavailable')
+check(cpu['logical'] == 2, 'logical CPU count changed')
+check(cpu['used_percent'] == 30.0, 'CPU used percent changed')
+check(cpu['time_percent']['user'] == 20.0, 'CPU user percent changed')
+check(cpu['time_percent']['system'] == 10.0, 'CPU system percent changed')
+check(cpu['time_percent']['idle'] == 70.0, 'CPU idle percent changed')
+check(memory['available'] is True, 'memory fixture unavailable')
+check(memory['total_bytes'] == 1024000, 'memory total changed')
+check(memory['used_percent'] == 60.0, 'memory used percent changed')
+check(memory['swap_used_percent'] == 25.0, 'swap used percent changed')
+check(memory['pressure']['source'] == 'procfs_psi', 'PSI source changed')
 PY
 
 echo "boot_cpu_memory_test OK"
