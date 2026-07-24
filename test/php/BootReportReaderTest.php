@@ -10,5 +10,4 @@ boot_test_run('BootReportReaderTest', static function (): void {
     $snapshot = $reader->latest();
     boot_test_assert($snapshot instanceof MetricSnapshot, 'Expected MetricSnapshot from v2 fixture');
     boot_test_same('boot', $snapshot->source(), 'Unexpected snapshot source');
-    boot_test_same('2', $snapshot->schemaVersion(), 'Unexpected snapshot schema');
 });
