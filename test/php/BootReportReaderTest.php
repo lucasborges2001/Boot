@@ -1,9 +1,14 @@
 <?php
 
 declare(strict_types=1);
-require_once __DIR__ . '/../../back/bootstrap.php';
-$reader = new BootReportReader(__DIR__ . '/../../var/sample-reports/latest/report.json');
-$snapshot = $reader->latest();
-assert($snapshot instanceof MetricSnapshot);
-assert($snapshot->source() === 'boot');
-echo "BootReportReaderTest OK\n";
+
+require_once __DIR__ . '/_bootstrap.php';
+
+boot_test_run('BootReportReaderTest', static function (): void {
+    $root = dirname(__DIR__, 2);
+    $reader = new BootReportReader($root . '/var/sample-reports/latest/report.json');
+    $snapshot = $reader->latest();
+    boot_test_assert($snapshot instanceof MetricSnapshot, 'Expected MetricSnapshot from v2 fixture');
+    boot_test_same('boot', $snapshot->source(), 'Unexpected snapshot source');
+    boot_test_same('2', $snapshot->schemaVersion(), 'Unexpected snapshot schema');
+});
