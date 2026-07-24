@@ -27,8 +27,10 @@ usage() {
   cat <<'TXT'
 Usage: boot-report [--env FILE] [--reports-dir DIR] [--no-telegram] [--print]
 
-Genera un snapshot Boot, lo persiste en reports/latest y opcionalmente envía
-un mensaje específico del módulo por Telegram usando Base/lib/shell/telegram.sh.
+Genera un snapshot Boot read-only, lo persiste en reports/latest y en historial,
+y opcionalmente envía un resumen por Telegram usando Base/lib/shell/telegram.sh.
+Los filesystems, interfaces de red y dispositivos de I/O detallados se limitan
+mediante allowlists de configuración.
 TXT
 }
 
@@ -71,14 +73,24 @@ if [[ -n "$BOOT_EXTRA_ENV_FILE" ]]; then
   base_env_load_file "$BOOT_EXTRA_ENV_FILE"
 fi
 
-if [[ "$(base_env_bool BOOT_ENABLED true)" != "true" ]]; then
-  base_log_info "Boot report disabled by BOOT_ENABLED=false"
+legacy_enabled="$(base_env_bool BOOT_ENABLED true)"
+if [[ "$(base_env_bool BOOT_TELEMETRY_ENABLED "$legacy_enabled")" != "true" ]]; then
+  base_log_info "Boot telemetry disabled"
   exit 0
 fi
 
 BOOT_REPORTS_DIR="${BOOT_REPORTS_DIR:-/var/lib/boot-report/reports}"
-BOOT_RETENTION_DAYS="${BOOT_RETENTION_DAYS:-14}"
+BOOT_HISTORY_RETENTION_DAYS="${BOOT_HISTORY_RETENTION_DAYS:-${BOOT_RETENTION_DAYS:-30}}"
+BOOT_HISTORY_MAX_FILES="${BOOT_HISTORY_MAX_FILES:-50000}"
+BOOT_FILESYSTEM_ALLOWLIST="${BOOT_FILESYSTEM_ALLOWLIST:-/}"
+BOOT_FILESYSTEM_EXCLUDELIST="${BOOT_FILESYSTEM_EXCLUDELIST:-/proc,/sys,/dev,/run}"
+BOOT_NETWORK_INTERFACE_ALLOWLIST="${BOOT_NETWORK_INTERFACE_ALLOWLIST:-}"
+BOOT_DISK_DEVICE_ALLOWLIST="${BOOT_DISK_DEVICE_ALLOWLIST:-}"
+BOOT_CPU_SAMPLE_INTERVAL_SECONDS="${BOOT_CPU_SAMPLE_INTERVAL_SECONDS:-0.2}"
 BOOT_SEND_TELEGRAM="${BOOT_SEND_TELEGRAM:-true}"
+export BOOT_REPORTS_DIR BOOT_HISTORY_RETENTION_DAYS BOOT_HISTORY_MAX_FILES
+export BOOT_FILESYSTEM_ALLOWLIST BOOT_FILESYSTEM_EXCLUDELIST BOOT_NETWORK_INTERFACE_ALLOWLIST
+export BOOT_DISK_DEVICE_ALLOWLIST BOOT_CPU_SAMPLE_INTERVAL_SECONDS BOOT_SEND_TELEGRAM
 
 lock_file="${BOOT_LOCK_FILE:-${BOOT_REPORTS_DIR}/.boot-report.lock}"
 if [[ "${BOOT_DISABLE_LOCK:-false}" != "true" ]]; then
@@ -115,15 +127,13 @@ if [[ "$telegram_enabled" == "true" ]]; then
     telegram_error="$(base_telegram_parse_error_description "$response" 2>/dev/null || printf 'Telegram send failed')"
     base_log_warn "Telegram send failed: ${telegram_error}"
   fi
-else
-  telegram_ok="null"
 fi
 
 json="$(boot_report_set_telegram_result "$json" "$telegram_enabled" "$telegram_ok" "$telegram_message_id" "$telegram_error")"
 summary="$(boot_render_summary_text "$json")"
 
 boot_persist_report "$json" "$summary" "$BOOT_REPORTS_DIR"
-boot_prune_old_reports "$BOOT_REPORTS_DIR" "$BOOT_RETENTION_DAYS" || true
+boot_prune_old_reports "$BOOT_REPORTS_DIR" "$BOOT_HISTORY_RETENTION_DAYS" "$BOOT_HISTORY_MAX_FILES" || true
 
 if [[ "$BOOT_PRINT" == "true" ]]; then
   printf '%s\n' "$json"
