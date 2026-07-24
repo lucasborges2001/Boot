@@ -38,8 +38,17 @@ final class BootTrendService
             }
             $byTimestamp[$generatedAt] = $snapshot;
         }
-        ksort($byTimestamp, SORT_STRING);
         $snapshots = array_values($byTimestamp);
+        usort($snapshots, static function (array $left, array $right): int {
+            $leftRaw = (string)($left['generated_at'] ?? '');
+            $rightRaw = (string)($right['generated_at'] ?? '');
+            $leftTime = strtotime($leftRaw);
+            $rightTime = strtotime($rightRaw);
+            if ($leftTime === false || $rightTime === false) {
+                return strcmp($leftRaw, $rightRaw);
+            }
+            return $leftTime <=> $rightTime;
+        });
 
         if ($snapshots === []) {
             return [
@@ -69,13 +78,13 @@ final class BootTrendService
                     $values[] = $value;
                 }
             }
-            if ($values !== []) {
+            if (count($values) >= 2) {
                 $metrics[$metricKey] = $this->summarizeValues($values);
             }
         }
 
         return [
-            'available' => count($snapshots) >= 2,
+            'available' => count($snapshots) >= 2 && $metrics !== [],
             'sample_count' => count($snapshots),
             'from' => (string)($snapshots[0]['generated_at'] ?? ''),
             'to' => (string)($snapshots[count($snapshots) - 1]['generated_at'] ?? ''),
