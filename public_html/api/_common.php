@@ -29,6 +29,9 @@ if (!function_exists('boot_api_send_headers')) {
 
         if (!headers_sent()) {
             header('Content-Type: application/json; charset=utf-8');
+            header('Cache-Control: no-store, max-age=0');
+            header('Pragma: no-cache');
+            header('X-Content-Type-Options: nosniff');
             foreach ($extraHeaders as $header) {
                 header($header);
             }
@@ -95,6 +98,13 @@ if (!function_exists('boot_api_send_error')) {
     }
 }
 
+if (!function_exists('boot_api_internal_error')) {
+    function boot_api_internal_error(): void
+    {
+        boot_api_send_error('INTERNAL_ERROR', 'Boot telemetry is temporarily unavailable', 500);
+    }
+}
+
 if (!function_exists('boot_api_require_method')) {
     function boot_api_require_method(string $allowedMethod, ?string $actualMethod = null): void
     {
@@ -141,5 +151,13 @@ if (!function_exists('boot_api_limit_from_query')) {
         $raw = $_GET['limit'] ?? $default;
         $limit = is_numeric($raw) ? (int)$raw : $default;
         return max($min, min($max, $limit));
+    }
+}
+
+if (!function_exists('boot_api_section_from_query')) {
+    function boot_api_section_from_query(): string
+    {
+        $section = strtolower(trim((string)($_GET['section'] ?? '')));
+        return preg_match('/^[a-z_]+$/', $section) === 1 ? $section : '';
     }
 }
