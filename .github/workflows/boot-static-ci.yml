@@ -1,0 +1,76 @@
+name: Boot Static CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: boot-static-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-and-isolated:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Boot
+        uses: actions/checkout@v4
+
+      - name: Verify toolchain
+        run: |
+          set -euo pipefail
+          php --version
+          python3 --version
+          bash --version | head -n 1
+
+      - name: Validate PHP syntax
+        run: |
+          set -euo pipefail
+          find . -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
+
+      - name: Validate Bash syntax
+        run: |
+          set -euo pipefail
+          find . -name '*.sh' -print0 | xargs -0 -n1 bash -n
+          bash -n bin/boot-report
+          bash -n bin/boot-report-test
+          bash -n bin/boot-report-package
+
+      - name: Validate Python syntax
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            python3 -c 'import pathlib,sys; p=pathlib.Path(sys.argv[1]); compile(p.read_text(encoding="utf-8"), str(p), "exec")' "$file"
+          done < <(find . -name '*.py' -print0)
+
+      - name: Run isolated collector tests
+        run: |
+          set -euo pipefail
+          bash test/shell/boot_cpu_memory_test.sh
+          bash test/shell/boot_network_rates_test.sh
+          bash test/shell/boot_system_collect_test.sh
+
+      - name: Enforce read-only web boundary
+        run: |
+          set -euo pipefail
+          if grep -RInE 'shell_exec|exec\(|system\(|passthru|proc_open|popen' public_html back; then
+            echo 'Forbidden process execution found in web/back boundary' >&2
+            exit 1
+          fi
+          if grep -RIn '\$throwable->getMessage()' public_html; then
+            echo 'Throwable details exposed by web endpoint' >&2
+            exit 1
+          fi
+
+      - name: Validate packages
+        run: |
+          set -euo pipefail
+          bash bin/boot-report-package
+          test -s dist/boot-server.tar.gz
+          test -s dist/boot-web.tar.gz
