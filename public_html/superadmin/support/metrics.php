@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * @file public_html/superadmin/support/metrics.php
- * @brief Construye view models de snapshot, métricas e historial para SuperAdmin Boot.
+ * @brief Construye view models de snapshot, métricas, tendencias e historial para SuperAdmin Boot.
  */
 
 require_once __DIR__ . '/../../../back/bootstrap.php';
@@ -19,6 +19,7 @@ if (!function_exists('boot_superadmin_summary_view_model')) {
             'available' => (bool)($summary['available'] ?? false),
             'health' => is_array($summary['health'] ?? null) ? $summary['health'] : [],
             'latest' => is_array($summary['latest'] ?? null) ? $summary['latest'] : null,
+            'trends' => is_array($summary['trends'] ?? null) ? $summary['trends'] : [],
             'history' => is_array($summary['history'] ?? null) ? $summary['history'] : [],
         ];
     }
@@ -29,6 +30,14 @@ if (!function_exists('boot_superadmin_latest_view_model')) {
     {
         $latest = $summary['latest'] ?? null;
         return is_array($latest) ? $latest : null;
+    }
+}
+
+if (!function_exists('boot_superadmin_trends_view_model')) {
+    function boot_superadmin_trends_view_model(array $summary): array
+    {
+        $trends = $summary['trends'] ?? [];
+        return is_array($trends) ? $trends : [];
     }
 }
 
