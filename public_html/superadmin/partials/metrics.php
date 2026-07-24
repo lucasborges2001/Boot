@@ -12,9 +12,12 @@ $u = $bootLatest['updates'] ?? [];
 $s = $bootLatest['services'] ?? [];
 ?>
 <section class="card"><h2>Métricas</h2><div class="metrics">
+  <div><span>CPU usada</span><strong><?php echo boot_superadmin_e(boot_superadmin_percent($m['cpu_used_percent'] ?? null)); ?></strong></div>
   <div><span>Load 1m</span><strong><?php echo boot_superadmin_e($m['cpu_load_1m'] ?? 'n/a'); ?></strong></div>
   <div><span>Load 5m</span><strong><?php echo boot_superadmin_e($m['cpu_load_5m'] ?? 'n/a'); ?></strong></div>
+  <div><span>Load 15m</span><strong><?php echo boot_superadmin_e($m['cpu_load_15m'] ?? 'n/a'); ?></strong></div>
   <div><span>RAM</span><strong><?php echo boot_superadmin_e(boot_superadmin_percent($m['ram_used_percent'] ?? null)); ?></strong></div>
+  <div><span>Swap</span><strong><?php echo boot_superadmin_e(boot_superadmin_percent($m['swap_used_percent'] ?? null)); ?></strong></div>
   <div><span>Disco /</span><strong><?php echo boot_superadmin_e(boot_superadmin_percent($m['disk_root_used_percent'] ?? null)); ?></strong></div>
   <div><span>Updates</span><strong><?php echo boot_superadmin_e($u['total'] ?? 0); ?></strong></div>
   <div><span>Security</span><strong><?php echo boot_superadmin_e($u['security'] ?? 0); ?></strong></div>
