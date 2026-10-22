@@ -35,5 +35,5 @@ if [[ ${#existing[@]} -eq 0 ]]; then
   exit 1
 fi
 
-tar -C "$ROOT" -czf "$DIST/boot-server.tar.gz" "${existing[@]}"
+tar -C "$ROOT" --exclude='config/server.env' --exclude='*/.env' --exclude='*/__pycache__' --exclude='*.pyc' --exclude='*.pem' --exclude='*.key' -czf "$DIST/boot-server.tar.gz" "${existing[@]}"
 printf 'Generated %s\n' "$DIST/boot-server.tar.gz"

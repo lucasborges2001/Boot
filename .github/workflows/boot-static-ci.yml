@@ -73,6 +73,9 @@ jobs:
             exit 1
           fi
 
+      - name: Server package safety contract
+        run: bash test/shell/boot_server_package_contract_test.sh
+
       - name: Validate packages
         run: |
           set -euo pipefail
