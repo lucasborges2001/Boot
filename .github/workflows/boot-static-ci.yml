@@ -56,6 +56,11 @@ jobs:
           bash test/shell/boot_network_rates_test.sh
           bash test/shell/boot_system_collect_test.sh
 
+      - name: Boot installation doctor fixtures
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s test/python -p '*installation_doctor_test.py' -v
+
       - name: Enforce read-only web boundary
         run: |
           set -euo pipefail
