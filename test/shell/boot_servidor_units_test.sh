@@ -56,4 +56,7 @@ if env -i PATH="$PATH" BOOT_SERVIDOR_ROOT="$SRV" BASE_DIR="$SRV/current/base" BO
   exit 1
 fi
 grep -Fq "Boot servidor forbids --env" "$TMP/rejected.stderr"
+# Regression contract: writes must not follow pre-existing symlinks.
+grep -Fq '"$BOOT_EXPECTED_REPORTS_DIR/latest"' "$ROOT/bin/boot-report"
+grep -Fq '"$BOOT_EXPECTED_REPORTS_DIR/.boot-report.lock"' "$ROOT/bin/boot-report"
 echo "BOOT_SERVIDOR_UNITS_CONTRACT_PASS"

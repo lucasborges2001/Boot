@@ -85,7 +85,9 @@ if [[ -n "$BOOT_SERVIDOR_ROOT_REQUIRED" ]]; then
     "$BOOT_SERVIDOR_ROOT_REQUIRED" \
     "$BOOT_SERVIDOR_ROOT_REQUIRED/state" \
     "$BOOT_SERVIDOR_ROOT_REQUIRED/state/boot" \
-    "$BOOT_EXPECTED_REPORTS_DIR"; do
+    "$BOOT_EXPECTED_REPORTS_DIR" \
+    "$BOOT_EXPECTED_REPORTS_DIR/latest" \
+    "$BOOT_EXPECTED_REPORTS_DIR/.boot-report.lock"; do
     if [[ -L "$boot_path" ]]; then
       echo "Boot servidor writable path must not be a symlink: $boot_path" >&2
       exit 2
