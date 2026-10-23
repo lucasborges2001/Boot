@@ -49,12 +49,10 @@ UMask=0027
 """
     if unit == "boot-report.timer":
         return """[Unit]
-Description=Run Boot observability every 15 minutes (servidor layout)
+Description=Run Boot observability daily at 08:30 (servidor layout)
 
 [Timer]
-OnBootSec=2min
-OnUnitActiveSec=15min
-AccuracySec=30s
+OnCalendar=*-*-* 08:30:00
 Persistent=true
 Unit=boot-report.service
 

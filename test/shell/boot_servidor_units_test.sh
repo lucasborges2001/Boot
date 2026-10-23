@@ -18,7 +18,11 @@ fi
 grep -Fxq "ReadWritePaths=$SRV/state/boot" "$TMP/boot.service"
 grep -Fxq "ProtectHome=read-only" "$TMP/boot.service"
 grep -Fxq "User=bootreport" "$TMP/boot.service"
-grep -Fxq "OnUnitActiveSec=15min" "$TMP/boot.timer"
+grep -Fxq "OnCalendar=*-*-* 08:30:00" "$TMP/boot.timer"
+if grep -Eq '^On(UnitActiveSec|BootSec)=' "$TMP/boot.timer"; then
+  echo "FAIL: servidor timer changed Boot cadence to interval" >&2
+  exit 1
+fi
 grep -Fxq "Unit=boot-report.service" "$TMP/boot.timer"
 if python3 -B "$RENDER" --root /opt/boot-report --unit boot-report.service >"$TMP/invalid" 2>/dev/null; then
   echo "FAIL: unsafe root accepted" >&2
