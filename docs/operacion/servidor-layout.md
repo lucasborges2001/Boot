@@ -40,6 +40,31 @@ El renderizador solo escribe en stdout. No crea carpetas, no llama a systemctl,
 no lee secretos y no genera un instalador ejecutable. La ruta impresa debe
 revisarse antes de almacenar las unidades en servidor/systemd/.
 
+## Paquete local fijado por SHA (sin despliegue)
+
+El ejemplo sin secretos está en `config/servidor.env.example`. No usar
+`config/server.env.example` legacy para esta modalidad ni versionar el
+`config/boot/server.env` privado.
+
+Desde un checkout limpio del SHA propietario:
+
+```bash
+bash test/shell/boot_servidor_env_example_test.sh
+bash test/shell/boot_servidor_package_test.sh
+bash scripts/server/package-servidor.sh
+```
+
+El último comando genera `dist/servidor/boot/<SHA>/boot-servidor-<SHA>.tar.gz`
+y `boot-servidor-<SHA>.manifest.json`, con `source_sha`,
+`source_tree_sha`, `payload_paths` y `archive_sha256`.
+El tar usa únicamente blobs Git de una lista positiva y **no** contiene
+`config/boot/server.env`, datos runtime ni Base. Base tiene SHA y release
+independientes. El empaquetador no copia archivos al servidor ni activa units.
+
+Antes de usar el artefacto: cotejar `source_sha` con el commit aprobado,
+verificar SHA-256 del tar y sus paths, preparar `config/boot/server.env`
+privado fuera del artefacto y comprobar permisos, ACL y rollback.
+
 ## Gates previos a cualquier activación
 
 1. Resolver SHA exactos de Base y Boot; verificar los binarios bajo
