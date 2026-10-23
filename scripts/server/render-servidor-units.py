@@ -36,7 +36,7 @@ User=bootreport
 Group=bootreport
 Environment=BASE_DIR={root}/current/base
 Environment=BOOT_REPORTS_DIR={root}/state/boot/reports
-EnvironmentFile=-{root}/config/boot/server.env
+EnvironmentFile={root}/config/boot/server.env
 ExecStart={root}/current/boot/bin/boot-report
 NoNewPrivileges=true
 PrivateTmp=true

@@ -10,7 +10,11 @@ python3 -B "$RENDER" --root "$SRV" --unit boot-report.timer >"$TMP/boot.timer"
 grep -Fxq "ExecStart=$SRV/current/boot/bin/boot-report" "$TMP/boot.service"
 grep -Fxq "Environment=BASE_DIR=$SRV/current/base" "$TMP/boot.service"
 grep -Fxq "Environment=BOOT_REPORTS_DIR=$SRV/state/boot/reports" "$TMP/boot.service"
-grep -Fxq "EnvironmentFile=-$SRV/config/boot/server.env" "$TMP/boot.service"
+grep -Fxq "EnvironmentFile=$SRV/config/boot/server.env" "$TMP/boot.service"
+if grep -Fq "EnvironmentFile=-$SRV/config/boot/server.env" "$TMP/boot.service"; then
+  echo "FAIL: private server.env must be required" >&2
+  exit 1
+fi
 grep -Fxq "ReadWritePaths=$SRV/state/boot" "$TMP/boot.service"
 grep -Fxq "ProtectHome=read-only" "$TMP/boot.service"
 grep -Fxq "User=bootreport" "$TMP/boot.service"

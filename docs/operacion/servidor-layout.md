@@ -44,9 +44,11 @@ revisarse antes de almacenar las unidades en servidor/systemd/.
 
 1. Resolver SHA exactos de Base y Boot; verificar los binarios bajo
    current/base y current/boot (sin depender de /opt/base).
-2. Asegurar que config/boot/server.env especifique BOOT_REPORTS_DIR dentro de
-   state/boot/reports; verificar directorio, modo, propietario, ausencia de
-   symlinks y acceso efectivo como bootreport.
+2. Provisionar `config/boot/server.env` antes de iniciar: la unidad nueva lo
+   exige (`EnvironmentFile` sin prefijo `-`), y fallará si falta. Asegurar que
+   especifique `BOOT_REPORTS_DIR` dentro de `state/boot/reports`; verificar
+   directorio, modo, propietario, ausencia de symlinks y acceso efectivo como
+   `bootreport`. Su mera existencia no valida el contenido ni su precedencia.
 3. ProtectHome=read-only permite *lectura* de /home, no ignora DAC/ACL:
    verificar los permisos de travesía para bootreport sin abrir todo HOME.
    ReadWritePaths restringe escrituras al estado del módulo.
