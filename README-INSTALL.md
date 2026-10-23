@@ -33,6 +33,13 @@ sudo systemctl restart boot-report.timer
 
 El instalador no crea secretos. Configurar `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` manualmente.
 
+## Alternativa compartida en `~/servidor/`
+
+La modalidad nueva se prepara con el renderizador read-only de unidades, sin
+sobrescribir `/opt` ni las unidades legacy. Su procedimiento y gates están en
+[`docs/operacion/servidor-layout.md`](docs/operacion/servidor-layout.md).
+**No ejecutar el instalador legacy para esta modalidad.**
+
 ## Web/SuperAdmin
 
 Publicar estos directorios en el entorno web:
