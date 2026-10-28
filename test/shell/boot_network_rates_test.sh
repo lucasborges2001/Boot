@@ -11,6 +11,7 @@ mkdir -p "$tmp/sys/class/net/eth0/statistics" "$tmp/reports/latest"
 printf 'up\n' > "$tmp/sys/class/net/eth0/operstate"
 printf '1000\n' > "$tmp/sys/class/net/eth0/speed"
 printf '1500\n' > "$tmp/sys/class/net/eth0/mtu"
+printf '1\n' > "$tmp/sys/class/net/eth0/carrier"
 for pair in \
   rx_bytes:2000 tx_bytes:4000 rx_packets:200 tx_packets:400 \
   rx_errors:0 tx_errors:0 rx_dropped:2 tx_dropped:0; do
@@ -53,11 +54,13 @@ def check(condition, message):
     if not condition:
         raise SystemExit(message)
 check(item['rate_status'] == 'ok', 'expected valid rate')
+check(item['carrier'] is True, 'expected reported carrier up')
 check(item['rates']['interval_seconds'] == 60.0, 'unexpected rate interval')
 check(item['rates']['rx_bytes_per_second'] == 16.67, 'unexpected RX rate')
 check(item['rates']['tx_bytes_per_second'] == 50.0, 'unexpected TX rate')
 PY
 
+printf '0\n' > "$tmp/sys/class/net/eth0/carrier"
 printf '500\n' > "$tmp/sys/class/net/eth0/statistics/rx_bytes"
 json="$(boot_collect_network_interfaces_json '2026-07-24T15:02:00Z' 220)"
 BOOT_TEST_JSON="$json" python3 - <<'PY'
@@ -65,8 +68,11 @@ import json, os
 item = json.loads(os.environ['BOOT_TEST_JSON'])[0]
 if item['rate_status'] != 'counter_reset' or item['rates'] is not None:
     raise SystemExit('counter reset generated an invalid rate')
+if item['carrier'] is not False:
+    raise SystemExit('expected reported carrier down')
 PY
 
+rm "$tmp/sys/class/net/eth0/carrier"
 printf '2000\n' > "$tmp/sys/class/net/eth0/statistics/rx_bytes"
 json="$(boot_collect_network_interfaces_json '2026-07-24T15:02:00Z' 50)"
 BOOT_TEST_JSON="$json" python3 - <<'PY'
@@ -74,6 +80,8 @@ import json, os
 item = json.loads(os.environ['BOOT_TEST_JSON'])[0]
 if item['rate_status'] != 'reboot_detected' or item['rates'] is not None:
     raise SystemExit('reboot generated an invalid rate')
+if item['carrier'] is not None:
+    raise SystemExit('unavailable carrier must remain unknown')
 PY
 
 echo "boot_network_rates_test OK"

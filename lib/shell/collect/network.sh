@@ -89,11 +89,14 @@ for name in allowlist:
     speed = read_int(os.path.join(interface_dir, 'speed'))
     if speed is not None and speed < 0:
         speed = None
+    carrier_value = read_int(os.path.join(interface_dir, 'carrier'))
+    carrier = carrier_value == 1 if carrier_value in (0, 1) else None
     item = {
         'name': name,
         'available': True,
         'operstate': read_text(os.path.join(interface_dir, 'operstate')) or 'unknown',
         'speed_mbps': speed,
+        'carrier': carrier,
         'mtu': read_int(os.path.join(interface_dir, 'mtu')),
         'counters': counters,
         'rates': None,

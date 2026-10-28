@@ -112,6 +112,8 @@ Los valores son contadores acumulativos de operaciones, bytes e `io_time_ms`. Bo
 
 Cada elemento conserva contadores acumulativos RX/TX, errores y drops. Las tasas se generan únicamente cuando existe un snapshot previo válido de la misma interfaz.
 
+`carrier` es `true`/`false` únicamente cuando el host informa `1`/`0` en sysfs; es `null` cuando no está disponible o es inválido. Indica estado de portadora informado por la interfaz (también puede tratarse de una interfaz virtual), no conectividad con el gateway ni topología física.
+
 Estados posibles de `rate_status`:
 
 - `insufficient_samples`;
