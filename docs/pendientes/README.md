@@ -16,11 +16,10 @@ YYYYMMDD-HHMM-<slug>.md
 | [`20260707-1920-boot-api-http-smoke.md`](20260707-1920-boot-api-http-smoke.md) | P1 | API/testing | Parcial: guard GET/405 existente; falta smoke HTTP real. |
 | [`20260707-1930-boot-host-quality-suite.md`](20260707-1930-boot-host-quality-suite.md) | P1 | Host/TestKit | Parcial: smoke local existente; suite host no verificada. |
 | [`20260707-1940-boot-retention-history-policy.md`](20260707-1940-boot-retention-history-policy.md) | P1 | Retención | Parcial: test de poda existente; faltan validaciones de límites y operación. |
-| [`20260707-1950-boot-alert-threshold-profiles.md`](20260707-1950-boot-alert-threshold-profiles.md) | P1 | Alertas | Abierto. |
+| [`20260707-1950-boot-alert-threshold-profiles.md`](20260707-1950-boot-alert-threshold-profiles.md) | P1 | Alertas | Parcial: severidad fija implementada; faltan perfiles configurables y pruebas de límites. |
 | [`20260707-2000-boot-readonly-security-smoke.md`](20260707-2000-boot-readonly-security-smoke.md) | P1 | Seguridad defensiva | Abierto: falta smoke read-only y auditoría de rutas indirectas. |
-| [`20260707-2020-boot-telegram-delivery-contract.md`](20260707-2020-boot-telegram-delivery-contract.md) | P1 | Telegram | Abierto. |
+| [`20260707-2020-boot-telegram-delivery-contract.md`](20260707-2020-boot-telegram-delivery-contract.md) | P1 | Telegram | Parcial: envío opcional y resultado JSON existentes; faltan tests de fallos y sandbox. |
 | [`20260707-1910-boot-collect-shell-refactor.md`](20260707-1910-boot-collect-shell-refactor.md) | P2 | Auditor/runtime | Parcial: colectores extraídos; falta reevaluar auditor y contratos. |
-| [`20260707-2010-boot-superadmin-base-ui-decision.md`](20260707-2010-boot-superadmin-base-ui-decision.md) | P2 | UX/Base | Abierto. |
 
 ## Pendientes cerrados y no listados
 
@@ -36,6 +35,8 @@ Ya no figuran como pendientes vivos:
 - wrappers sospechosos SuperAdmin.
 
 Esos temas pasan a `docs/cambios/` y `docs/auditorias/`.
+
+- decisión P2 SuperAdmin/Base UI cerrada como **excepción acotada**: registrada en [`bootSuperadminFront.md`](../../public_html/superadmin/bootSuperadminFront.md#relación-con-base-ui--decisión-arquitectónica-2026-11-02). La migración futura se reabre únicamente ante condiciones explícitas; no hubo cambios de interfaz ni pruebas ejecutadas.
 
 ## Salud del host antes del reinicio
 
