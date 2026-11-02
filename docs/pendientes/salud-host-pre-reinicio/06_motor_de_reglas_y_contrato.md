@@ -175,3 +175,15 @@ Pendientes:
 ## Criterio de cierre
 
 La fase termina cuando el contrato, severidades, exit codes y reglas compuestas están documentados y cubiertos por tests unitarios con fixtures.
+
+## Revisión de evidencia — 2026-11-02
+
+**Clasificación: abierto; contrato propuesto, no implementado ni validado.** El árbol de `main` contiene `lib/python/build_report.py`, tests de telemetría y contratos JSON v1/v2; no se identifican tests dedicados al motor de reglas de pre-reinicio ni una CLI `boot-health`.
+
+**Reutilización:** revisar normalización y readers actuales antes de introducir un nuevo esquema. Los umbrales de telemetría no equivalen a reglas de bloqueo de reboot.
+
+**Decisiones pendientes:** semántica de `unknown` por operación; precedencia de severidades; estabilidad de IDs; exit codes; política de compatibilidad; reglas DKMS/kernel y evidencia saneada.
+
+**Pruebas exigidas:** fixtures de kernel sano, paquetes incompletos, DKMS fallido, fallback ausente, colector sin permisos y resultado desconocido. Comparar decisiones deterministas y preservar readers v1/v2.
+
+**PASS:** reglas y contratos versionados con tests de casos positivos/negativos. **No verificado:** ejecución de suites, integración real y permisos en host.
