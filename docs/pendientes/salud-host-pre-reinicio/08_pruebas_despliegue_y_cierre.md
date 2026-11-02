@@ -158,3 +158,13 @@ El proyecto se declara terminado cuando:
 **Razón principal:** la herramienta debe ganar evidencia sobre falsos positivos antes de intervenir en operaciones del sistema.
 
 **Evidencia que cambiaría la decisión:** una política operativa explícita, validada en varios hosts, que requiera enforcement automático y tenga un bypass de recuperación seguro y auditable.
+
+## Revisión de evidencia — 2026-11-02
+
+**Clasificación: abierto; no existe evidencia suficiente de cierre.** En el árbol de `main` no se identifican los tests propuestos `test/shell/boot_health_collect_test.sh`, `test/php/BootHealthContractTest.php` o `test/php/BootHealthApiTest.php`. Existen pruebas generales de Boot, que no sustituyen fixtures del incidente de kernel/DKMS.
+
+**Orden de validación:** (1) sintaxis y contratos; (2) fixtures de reglas y `unknown`; (3) CLI disposable; (4) API read-only; (5) integración con Base; (6) packaging; (7) host controlado; (8) integración en Pruebas con gitlink exacto y reporte TestKit.
+
+**Invariantes:** ninguna prueba debe reparar paquetes, modificar GRUB/initramfs, reiniciar ni alterar systemd; resultados de fallos parciales deben ser explícitos.
+
+**PASS:** incidente de referencia bloquea reboot, caso saludable lo permite, compatibilidad v1/v2 y evidencia de pruebas con SHA. **FAIL:** declarar éxito por existencia de scripts o por un pipeline remoto PASS sin validar producto. **No verificado:** suites, CI, host real y TestKit.
