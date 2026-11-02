@@ -149,3 +149,13 @@ No se modifica `Pruebas` durante la implementación interna de Boot.
 ## Criterio de cierre
 
 La fase termina cuando existe una decisión documentada sobre CLI/perfiles y todos los consumidores utilizan el mismo contrato normalizado sin duplicar reglas.
+
+## Revisión de evidencia — 2026-11-02
+
+**Clasificación: abierto; integración específica de pre-reinicio no demostrada.** En `main` existe `bin/boot-report`, persistencia e infraestructura de Telegram/API, pero no se identifica `bin/boot-health`. Los consumidores de telemetría existentes no prueban soporte de `BLOCK_REBOOT` ni `safe_to_reboot`.
+
+**Avance aprovechable:** reutilizar las rutas y contratos públicos existentes; no duplicar persistencia, lógica de Telegram ni readers. La integración con Pruebas pertenece al host y requiere evaluación independiente.
+
+**Decisión prioritaria:** elegir perfil bajo demanda o CLI separada después de medir costo, permisos, compatibilidad de exit codes y packaging. No activar bloqueo automático de shutdown.
+
+**PASS:** CLI, historial, API y Telegram consumen la misma decisión normalizada, sin ejecución de comandos desde web; pruebas con Telegram deshabilitado y fallos parciales. **No verificado:** funcionamiento en producción, TestKit y SHA integrado en Pruebas.
