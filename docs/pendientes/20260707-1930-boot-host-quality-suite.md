@@ -34,3 +34,11 @@ Debe ser manual/opcional. No bloquear deploy de aplicación por defecto.
 - Suite existe.
 - Documenta que Boot es tooling opcional.
 - Puede ejecutarse localmente desde raíz de `Pruebas`.
+
+## Auditoría estática — 2026-11-02
+
+**Estado: abierto, integración externa no verificada.** En Boot existe `scripts/dev/smoke.sh`, que ejecuta lint PHP/Bash/Python, tests shell/PHP y `bin/boot-report-test`. Esto cubre la capacidad local de prueba, **no** la suite opcional propuesta en el host `Pruebas`.
+
+**Owner:** el wrapper `scripts/quality/boot_tooling_smoke.sh` corresponde a `lucasborges2001/Pruebas`; no copiarlo a Boot. Antes de implementarlo, verificar `AGENTS.md`, ubicación real del submódulo, gitlink y scripts de calidad existentes en Pruebas.
+
+**PASS:** wrapper opcional en el host que ejecuta el SHA exacto del gitlink, produce evidencia y no bloquea despliegues por defecto. **No verificado:** repositorio Pruebas, ejecución de TestKit, suite host y resultados de CI.
