@@ -36,3 +36,7 @@ Ya no figuran como pendientes vivos:
 - wrappers sospechosos SuperAdmin.
 
 Esos temas pasan a `docs/cambios/` y `docs/auditorias/`.
+
+## Salud del host antes del reinicio
+
+El bloque [`salud-host-pre-reinicio/`](salud-host-pre-reinicio/01_alcance_y_criterios.md) sigue **abierto**. Revisión estática de `main` (2026-11-02): existen colectores y contratos generales de Boot, pero no se identifican la CLI `bin/boot-health` ni los tests específicos propuestos. Se actualizaron las fases 01, 06, 07 y 08 con evidencia, brechas y criterios PASS/FAIL. Las fases 02–05 conservan su estado pendiente hasta revisión detallada. No se ejecutaron tests ni validación productiva.
