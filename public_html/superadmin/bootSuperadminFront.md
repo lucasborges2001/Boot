@@ -42,16 +42,33 @@ Todos aceptan solo `GET` y devuelven JSON con:
 }
 ```
 
-## Relación con Base UI
+## Relación con Base UI — decisión arquitectónica (2026-11-02)
 
-La vista actual es una pantalla propia minimalista. Consume contratos PHP de Boot y Base, pero no está completamente migrada a componentes Base UI.
+**Decisión: excepción documentada.** SuperAdmin de Boot conserva por ahora una vista PHP/CSS propia, minimalista y read-only. No se realizará una migración preventiva a Base UI sin un consumidor integrado y una mejora demostrable.
 
-Criterio para migrar en una fase futura:
+### Evidencia y fundamento
 
-- mantener read-only;
-- no agregar formularios de acción;
-- conservar los endpoints estables;
-- reemplazar tarjetas/tablas propias por componentes Base solo si mejora consistencia sin aumentar acoplamiento.
+- En Boot, `public_html/superadmin/index.php` compone parciales y carga `boot-superadmin.css`; `_pageBootstrap.php` prepara el view model propio, y los endpoints permanecen read-only.
+- Base publica componentes reutilizables, entre ellos `base_component_card()` y `base_component_metric()` bajo su contrato `public_html/components`. **La decisión no se basa en ausencia de componentes.**
+- `scripts/web/package-web.sh` empaqueta `back`, `config`, `public_html` y documentación de Boot; no incluye assets frontend de Base. Cambiar a sus componentes exigiría resolver y validar un contrato de distribución/URLs de assets en todos los despliegues.
+- `back/support/base-resolver.php` utiliza helpers PHP de Base cuando está disponible; esto no convierte los assets del frontend en dependencia cubierta por packaging.
+- Duplicar visuales de manera acotada es una deuda de estilo aceptada; **no** se autoriza duplicar reglas de dominio, parsers, contratos JSON ni lógica de observabilidad.
+
+### Invariantes de la excepción
+
+- Mantener read-only: ninguna ejecución de comandos, envío de Telegram, mutación de estado, formularios operativos ni cambios de configuración desde web.
+- Reutilizar contratos públicos y normalizadores existentes en lugar de copiar lógica de Base.
+- Limitar el CSS local a presentación de Boot; no crear una librería reusable paralela.
+- Conservar compatibilidad de endpoints, escaping HTML y sanitización de paths.
+- Registrar cualquier ampliación funcional de la UI como decisión separada, con test de seguridad y packaging.
+
+### Cuándo reconsiderar la migración
+
+Reabrir esta decisión si el host consumidor provee Base UI como contrato público estable para el paquete web, si aparecen varias pantallas duplicando componentes genéricos o si se exige un diseño transversal uniforme. Antes de migrar, verificar entrypoints públicos, URLs/assets, compatibilidad de tema, packaging y smokes. No importar internals de Base ni copiar código entre módulos.
+
+### Validación y reversión
+
+Esta es **una decisión documental**, no una certificación de funcionamiento. Se verificaron fuentes y contratos estáticamente en `main` de Boot y Base; no se ejecutaron smokes, CI ni pruebas visuales. El rollback es revertir este cambio documental y reabrir la decisión.
 
 ## Restricciones
 
