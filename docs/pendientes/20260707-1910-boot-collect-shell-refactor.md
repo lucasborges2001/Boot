@@ -1,36 +1,25 @@
-# P2 — Refactor controlado de `lib/shell/collect.sh`
+# P2 — Completar refactor controlado de `lib/shell/collect.sh`
 
-## Motivo
+## Estado verificado en main
+**Parcialmente avanzado.** El agregador ya delega en `lib/shell/collect/{system,cpu,memory,storage,network}.sh`; también existen tests focalizados `boot_collect_test.sh`, `boot_cpu_memory_test.sh`, `boot_network_rates_test.sh` y `boot_system_collect_test.sh`.
 
-Única warning restante del auditor:
+Esto contradice el plan original de comenzar la extracción desde cero. No se ha verificado que el auditor siga emitiendo `FILE_TOO_LARGE` ni que el refactor restante sea necesario.
 
-```txt
-FILE_TOO_LARGE :: lib/shell/collect.sh
-```
+## Brecha y decisión pendiente
+1. Ejecutar auditor estructural y registrar warning exacto sobre el SHA actual.
+2. Revisar tamaño, responsabilidades y contratos del agregador actual antes de proponer nuevas particiones.
+3. Si el warning persiste y el tamaño refleja acoplamiento real, extraer solo responsabilidades justificadas, conservando funciones públicas y esquema JSON.
+4. Ampliar fixtures únicamente donde falten casos reproducibles.
 
-No se debe tocar sin fixtures porque genera el contrato `report.json`.
+## Riesgos
+Cambiar el orden de recolección, la semántica de valores ausentes o los campos de `report.json`; introducir dependencia indebida con Base.
 
-## Plan sugerido
+## Validación y cierre
+- `bash -n lib/shell/collect.sh` y scripts extraídos.
+- `BASE_DIR=../Base bash scripts/dev/smoke.sh` con Base disponible.
+- Comparación de JSON normalizado antes/después y contratos v1/v2.
+- Evidencia del auditor sin el warning o justificación documentada para conservarlo.
+- No cerrar hasta ejecutar pruebas y registrar SHA/resultados.
 
-1. Crear fixtures para `/proc/meminfo`, `/proc/loadavg`, `df`, `apt`, `systemctl`, sensores y red.
-2. Separar por dominio:
-
-```txt
-lib/shell/collect/basic.sh
-lib/shell/collect/resources.sh
-lib/shell/collect/temperature.sh
-lib/shell/collect/updates.sh
-lib/shell/collect/services.sh
-lib/shell/collect/network.sh
-lib/shell/collect/report.sh
-lib/shell/collect.sh
-```
-
-3. Mantener `lib/shell/collect.sh` como agregador compatible.
-4. Comparar JSON antes/después normalizando `generated_at` y host/IP variables.
-
-## Criterio de cierre
-
-- Auditor queda en `0 error(s), 0 warning(s)` o deja de marcar tamaño.
-- `scripts/dev/smoke.sh` pasa.
-- `bin/boot-report --no-telegram --print` mantiene shape y tipos.
+## No verificado
+Auditor actual, ejecución de pruebas, comportamiento en host real.
