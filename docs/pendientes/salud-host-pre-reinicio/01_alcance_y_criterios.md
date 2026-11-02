@@ -101,3 +101,13 @@ recolección read-only
 ## Criterio de cierre
 
 La fase se considera terminada cuando existe un contrato de alcance aprobado, los no-objetivos son explícitos y ninguna tarea posterior requiere asumir permisos, plataformas o capacidades no documentadas.
+
+## Revisión de evidencia — 2026-11-02
+
+**Clasificación: abierto, fase de diseño.** En el árbol de `main` se observan colectores de telemetría y tests de Boot, pero no una CLI `bin/boot-health` ni pruebas específicas `boot_health_*`. La existencia de `public_html/api/health.php` no demuestra el contrato propuesto `safe_to_reboot`.
+
+**Avance reutilizable:** Boot ya dispone de recolección modular, persistencia y consumidores API; debe revisarse su contrato antes de extenderlo. No se verificó ejecución ni operación real.
+
+**Brecha verificable:** fijar plataforma, permisos, timeouts, tratamiento de `unknown`, modelo de perfiles y versión de schema. Registrar decisiones y ejemplos de salida antes de implementar.
+
+**PASS de esta fase:** contrato aprobado, matriz de permisos/plataformas, invariantes y no-objetivos; **FAIL:** asumir que la API de salud existente evalúa reinicios sin probarlo.
