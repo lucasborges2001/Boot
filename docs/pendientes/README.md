@@ -13,11 +13,11 @@ YYYYMMDD-HHMM-<slug>.md
 | Archivo | Prioridad | Área | Estado |
 |---|---:|---|---|
 | [`20260707-1900-boot-operacion-productiva-controlada.md`](20260707-1900-boot-operacion-productiva-controlada.md) | P0 | Producción | Abierto. |
-| [`20260707-1920-boot-api-http-smoke.md`](20260707-1920-boot-api-http-smoke.md) | P1 | API/testing | Abierto. |
-| [`20260707-1930-boot-host-quality-suite.md`](20260707-1930-boot-host-quality-suite.md) | P1 | Host/TestKit | Abierto. |
+| [`20260707-1920-boot-api-http-smoke.md`](20260707-1920-boot-api-http-smoke.md) | P1 | API/testing | Parcial: guard GET/405 existente; falta smoke HTTP real. |
+| [`20260707-1930-boot-host-quality-suite.md`](20260707-1930-boot-host-quality-suite.md) | P1 | Host/TestKit | Parcial: smoke local existente; suite host no verificada. |
 | [`20260707-1940-boot-retention-history-policy.md`](20260707-1940-boot-retention-history-policy.md) | P1 | Retención | Parcial: test de poda existente; faltan validaciones de límites y operación. |
 | [`20260707-1950-boot-alert-threshold-profiles.md`](20260707-1950-boot-alert-threshold-profiles.md) | P1 | Alertas | Abierto. |
-| [`20260707-2000-boot-readonly-security-smoke.md`](20260707-2000-boot-readonly-security-smoke.md) | P1 | Seguridad defensiva | Abierto. |
+| [`20260707-2000-boot-readonly-security-smoke.md`](20260707-2000-boot-readonly-security-smoke.md) | P1 | Seguridad defensiva | Abierto: falta smoke read-only y auditoría de rutas indirectas. |
 | [`20260707-2020-boot-telegram-delivery-contract.md`](20260707-2020-boot-telegram-delivery-contract.md) | P1 | Telegram | Abierto. |
 | [`20260707-1910-boot-collect-shell-refactor.md`](20260707-1910-boot-collect-shell-refactor.md) | P2 | Auditor/runtime | Parcial: colectores extraídos; falta reevaluar auditor y contratos. |
 | [`20260707-2010-boot-superadmin-base-ui-decision.md`](20260707-2010-boot-superadmin-base-ui-decision.md) | P2 | UX/Base | Abierto. |
